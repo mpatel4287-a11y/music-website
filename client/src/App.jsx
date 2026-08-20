@@ -784,6 +784,8 @@ export default function App() {
               autoplay: 1,
               controls: 0,
               disablekb: 1,
+              playsinline: 1,
+              enablejsapi: 1,
               origin: window.location.origin,
             },
           }}
@@ -791,7 +793,9 @@ export default function App() {
             playerRef.current = e.target;
             playerRef.current.setVolume(volume);
             if (roomState?.isPlaying) {
-              playerRef.current.playVideo();
+              try {
+                playerRef.current.playVideo();
+              } catch (err) {}
             }
           }}
           onEnd={handleVideoEnded}
@@ -956,13 +960,15 @@ export default function App() {
         />
       )}
 
-      {/* Bottom Mobile Tab Bar for Phones (<= 768px) */}
-      <MobileNav
-        activeTab={activeMobileTab}
-        onTabChange={setActiveMobileTab}
-        isPlaying={Boolean(roomState?.isPlaying)}
-        requestsCount={roomState?.requests?.length || 0}
-      />
+      {/* Bottom Mobile Tab Bar for Phones (<= 768px) - Render ONLY inside active room */}
+      {inRoom && viewMode === "lounge" && (
+        <MobileNav
+          activeTab={activeMobileTab}
+          onTabChange={setActiveMobileTab}
+          isPlaying={Boolean(roomState?.isPlaying)}
+          requestsCount={roomState?.requests?.length || 0}
+        />
+      )}
 
       {/* Share Room Invitation Modal */}
       <ShareModal

@@ -66,46 +66,59 @@ export default function DashboardView({
     }
   }, []);
 
-  const handleRequestLocation = () => {
-    if (!navigator.geolocation) {
-      setLocationPermission("denied");
-      return;
+  const fetchIPLocationFallback = async () => {
+    try {
+      const res = await fetch("https://ipapi.co/json/");
+      const data = await res.json();
+      const locationData = {
+        city: data.city || "Bengaluru",
+        country: data.country_name || "India",
+      };
+      setUserLocation(locationData);
+      setLocationPermission("granted");
+      localStorage.setItem("musync_location", JSON.stringify(locationData));
+    } catch (e) {
+      const defaultLoc = { city: "Bengaluru", country: "India" };
+      setUserLocation(defaultLoc);
+      setLocationPermission("granted");
+      localStorage.setItem("musync_location", JSON.stringify(defaultLoc));
     }
+  };
 
+  const handleRequestLocation = () => {
     setLocationPermission("locating");
 
-    navigator.geolocation.getCurrentPosition(
-      async (position) => {
-        const lat = position.coords.latitude;
-        const lng = position.coords.longitude;
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        async (position) => {
+          const lat = position.coords.latitude;
+          const lng = position.coords.longitude;
 
-        try {
-          // Reverse geocoding API to get city and country name
-          const res = await fetch(
-            `https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${lat}&longitude=${lng}&localityLanguage=en`
-          );
-          const data = await res.json();
-          const city =
-            data.city || data.locality || data.principalSubdivision || "Bengaluru";
-          const country = data.countryName || "India";
+          try {
+            const res = await fetch(
+              `https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${lat}&longitude=${lng}&localityLanguage=en`
+            );
+            const data = await res.json();
+            const city =
+              data.city || data.locality || data.principalSubdivision || "Bengaluru";
+            const country = data.countryName || "India";
 
-          const locationData = { city, country, lat, lng };
-          setUserLocation(locationData);
-          setLocationPermission("granted");
-          localStorage.setItem("musync_location", JSON.stringify(locationData));
-        } catch (err) {
-          const fallbackLoc = { city: "Bengaluru", country: "India", lat, lng };
-          setUserLocation(fallbackLoc);
-          setLocationPermission("granted");
-          localStorage.setItem("musync_location", JSON.stringify(fallbackLoc));
-        }
-      },
-      (error) => {
-        console.warn("Geolocation permission error/denied:", error.message);
-        setLocationPermission("denied");
-      },
-      { timeout: 10000, maximumAge: 60000 }
-    );
+            const locationData = { city, country, lat, lng };
+            setUserLocation(locationData);
+            setLocationPermission("granted");
+            localStorage.setItem("musync_location", JSON.stringify(locationData));
+          } catch (err) {
+            fetchIPLocationFallback();
+          }
+        },
+        (error) => {
+          fetchIPLocationFallback();
+        },
+        { timeout: 4000, maximumAge: 60000, enableHighAccuracy: false }
+      );
+    } else {
+      fetchIPLocationFallback();
+    }
   };
 
   // Fetch Recommendations based on selected genre and country location
