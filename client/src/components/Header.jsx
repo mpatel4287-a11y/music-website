@@ -12,9 +12,7 @@ import {
   UserCog,
   Compass,
   Radio,
-  LogIn,
-  Sun,
-  Moon,
+  Edit2,
 } from "lucide-react";
 
 function Header({
@@ -31,9 +29,7 @@ function Header({
   showToast,
   viewMode = "lounge",
   onToggleViewMode,
-  user,
-  onOpenAuth,
-  onLogout,
+  onOpenNicknameModal,
 }) {
   const [showPasscodeText, setShowPasscodeText] = useState(false);
   const [copiedLink, setCopiedLink] = useState(false);
@@ -182,42 +178,25 @@ function Header({
 
 
 
-        {/* Account Authentication Badge */}
-        {user ? (
-          <div className="current-user-chip logged-in" title={`Logged in as ${user.email}`}>
-            <div
-              className="profile-avatar-circle"
-              style={{ backgroundColor: user.avatarColor || avatarColor || "#8b5cf6" }}
-            >
-              {user.username.charAt(0).toUpperCase()}
-            </div>
-            <div className="profile-details desktop-only">
-              <span className="profile-username">{user.username}</span>
-              <span className="profile-role host">{user.region || "Global"}</span>
-            </div>
-            {onLogout && (
-              <button
-                type="button"
-                className="icon-mini-btn"
-                onClick={onLogout}
-                title="Log out of account"
-              >
-                <LogOut size={13} />
-              </button>
-            )}
-          </div>
-
-        ) : (
-          <button
-            type="button"
-            className="btn-auth-header"
-            onClick={onOpenAuth}
-            title="Log In or Create Account"
+        {/* User Nickname Badge */}
+        <button
+          type="button"
+          className="listeners-avatar-stack-btn"
+          onClick={onOpenNicknameModal}
+          title="Click to edit display nickname"
+          style={{ cursor: "pointer", background: "#ffffff", color: "#000000", border: "1.5px solid #000000" }}
+        >
+          <div
+            className="user-avatar-chip"
+            style={{ backgroundColor: avatarColor || "#8b5cf6", color: "#ffffff", fontWeight: "800" }}
           >
-            <LogIn size={14} />
-            <span>Log In / Register</span>
-          </button>
-        )}
+            {username ? username.charAt(0).toUpperCase() : "U"}
+          </div>
+          <span style={{ fontSize: "0.85rem", fontWeight: "700", marginLeft: "0.3rem" }}>
+            {username || "Set Nickname"}
+          </span>
+          <Edit2 size={13} style={{ marginLeft: "0.2rem", opacity: 0.7 }} />
+        </button>
 
         {/* Leave Room Button */}
         {roomId && (

@@ -31,8 +31,8 @@ const GENRE_TABS = [
 
 
 export default function DashboardView({
-  user,
-  onOpenAuth,
+  username,
+  avatarColor,
   onCreateRoom,
   onJoinRoom,
   onHostSongDirect,
@@ -179,13 +179,13 @@ export default function DashboardView({
           <div className="hero-user-badge">
             <div
               className="hero-avatar-ring"
-              style={{ borderColor: user?.avatarColor || "#8b5cf6" }}
+              style={{ borderColor: avatarColor || "#8b5cf6" }}
             >
               <div
                 className="hero-avatar"
-                style={{ backgroundColor: user?.avatarColor || "#8b5cf6" }}
+                style={{ backgroundColor: avatarColor || "#8b5cf6" }}
               >
-                {user ? user.username.charAt(0).toUpperCase() : "🎧"}
+                {username ? username.charAt(0).toUpperCase() : "🎧"}
               </div>
             </div>
             <div className="hero-text-block">
@@ -194,7 +194,7 @@ export default function DashboardView({
                 <span>REAL-TIME SYNCHRONIZED AUDIO PLATFORM</span>
               </div>
               <h1 className="hero-greeting">
-                {user ? `Welcome back, ${user.username}!` : "Welcome to Musync Lounge!"}
+                {username ? `Welcome back, ${username}!` : "Welcome to Musync Lounge!"}
               </h1>
               <p className="hero-subtext">
                 {userLocation

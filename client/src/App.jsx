@@ -13,7 +13,7 @@ import ParticipantsModal from "./components/ParticipantsModal";
 import FloatingReactions from "./components/FloatingReactions";
 import ToastNotification from "./components/ToastNotification";
 import MobileNav from "./components/MobileNav";
-import AuthModal from "./components/AuthModal";
+import NicknameModal from "./components/NicknameModal";
 import DashboardView from "./components/DashboardView";
 
 import "./App.css";
@@ -33,8 +33,7 @@ const socket = io(BACKEND_URL, {
 export default function App() {
   // Navigation & View Mode State ('dashboard' | 'lounge')
   const [viewMode, setViewMode] = useState("dashboard");
-  const [user, setUser] = useState(null);
-  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+  const [isNicknameModalOpen, setIsNicknameModalOpen] = useState(false);
   const [isCreateJoinModalOpen, setIsCreateJoinModalOpen] = useState(false);
 
   // Session & Room State
@@ -42,8 +41,12 @@ export default function App() {
   const [roomId, setRoomId] = useState("");
   const [passcode, setPasscode] = useState("");
   const [hasPasscode, setHasPasscode] = useState(false);
-  const [username, setUsername] = useState("");
-  const [avatarColor, setAvatarColor] = useState("#8b5cf6");
+  const [username, setUsername] = useState(
+    () => localStorage.getItem("musync_username") || ""
+  );
+  const [avatarColor, setAvatarColor] = useState(
+    () => localStorage.getItem("musync_avatar_color") || "#8b5cf6"
+  );
   const [isHost, setIsHost] = useState(false);
   const [roomState, setRoomState] = useState(null);
 
@@ -104,6 +107,14 @@ export default function App() {
 
   const dismissToast = useCallback((id) => {
     setToasts((prev) => prev.filter((t) => t.id !== id));
+  }, []);
+
+  // Prompt user for display nickname on first site visit
+  useEffect(() => {
+    const savedName = localStorage.getItem("musync_username");
+    if (!savedName) {
+      setIsNicknameModalOpen(true);
+    }
   }, []);
 
   // 1. Detect URL invite query params (?room=XYZ&pass=123) & Session Auto-Rejoin
@@ -808,24 +819,27 @@ export default function App() {
         showToast={showToast}
         viewMode={viewMode}
         onToggleViewMode={() => setViewMode(viewMode === "lounge" ? "dashboard" : "lounge")}
-        user={user}
-        onOpenAuth={() => setIsAuthModalOpen(true)}
-        onLogout={handleLogout}
+        onOpenNicknameModal={() => setIsNicknameModalOpen(true)}
       />
 
-      {/* Auth Modal for Login & Registration */}
-      <AuthModal
-        isOpen={isAuthModalOpen}
-        onClose={() => setIsAuthModalOpen(false)}
-        onAuthSuccess={handleAuthSuccess}
-        backendUrl={BACKEND_URL}
+      {/* Nickname Selection Modal */}
+      <NicknameModal
+        isOpen={isNicknameModalOpen}
+        onClose={() => setIsNicknameModalOpen(false)}
+        currentUsername={username}
+        currentAvatarColor={avatarColor}
+        onSave={({ username: newName, avatarColor: newColor }) => {
+          setUsername(newName);
+          setAvatarColor(newColor);
+          showToast(`✨ Welcome, @${newName}!`, "success");
+        }}
       />
 
       {/* View Switcher: Dashboard View vs Lounge View */}
       {viewMode === "dashboard" || !inRoom ? (
         <DashboardView
-          user={user}
-          onOpenAuth={() => setIsAuthModalOpen(true)}
+          username={username}
+          avatarColor={avatarColor}
           onCreateRoom={() => setIsCreateJoinModalOpen(true)}
           onJoinRoom={(rId, hasPass) => {
             if (hasPass) {
@@ -835,8 +849,8 @@ export default function App() {
               handleJoinRoom({
                 roomId: rId,
                 passcode: "",
-                username: user?.username || username || `Listener-${Math.floor(100 + Math.random() * 900)}`,
-                avatarColor: user?.avatarColor || avatarColor || "#8b5cf6",
+                username: username || `Listener-${Math.floor(100 + Math.random() * 900)}`,
+                avatarColor: avatarColor || "#8b5cf6",
               });
               setViewMode("lounge");
             }
