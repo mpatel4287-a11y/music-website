@@ -4649,3 +4649,107 @@ h1, h2, h3, h4, h5, h6,
   box-shadow: 0 4px 14px rgba(0, 0, 0, 0.2) !important;
   font-weight: 700 !important;
 }
+
+/* ==========================================================================
+   15. 100% FULL-SCREEN LAYOUT & HIGH CONTRAST INPUT FIXES
+   ========================================================================== */
+
+/* Full Screen Edge-to-Edge Layout */
+html, body, #root,
+.musync-app-root,
+.app-container,
+.main-lounge-grid,
+.dashboard-container {
+  width: 100% !important;
+  max-width: 100% !important;
+  margin: 0 !important;
+  background: #dcdce0 !important;
+}
+
+.dashboard-container {
+  padding: 1.75rem 3rem 4rem 3rem !important;
+  height: calc(100vh - 68px) !important;
+}
+
+/* Auth Modal & Input Field High Contrast (Stark Black Text on White Input) */
+.auth-overlay,
+.modal-overlay,
+.confirm-overlay {
+  background: rgba(0, 0, 0, 0.65) !important;
+  backdrop-filter: blur(8px) !important;
+}
+
+.auth-card,
+.auth-modal-card,
+.modal-card,
+.confirm-card {
+  background: #ffffff !important;
+  border: 3px solid #000000 !important;
+  color: #000000 !important;
+  border-radius: 20px !important;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4) !important;
+}
+
+.auth-modal-card .form-label,
+.auth-card label,
+.modal-card label,
+.form-label {
+  color: #000000 !important;
+  font-weight: 800 !important;
+  font-size: 0.9rem !important;
+}
+
+.auth-modal-card .form-input,
+.auth-modal-card .form-select,
+.auth-input,
+.modal-input,
+.form-input,
+input[type="text"],
+input[type="email"],
+input[type="password"],
+input[type="search"] {
+  background: #ffffff !important;
+  color: #000000 !important;
+  border: 2px solid #000000 !important;
+  border-radius: 10px !important;
+  padding: 0.75rem 1rem !important;
+  font-size: 0.95rem !important;
+  font-weight: 700 !important;
+  caret-color: #000000 !important;
+  outline: none !important;
+  box-sizing: border-box !important;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05) !important;
+}
+
+.auth-modal-card .form-input::placeholder,
+.auth-input::placeholder,
+.modal-input::placeholder,
+.form-input::placeholder,
+input::placeholder {
+  color: #555555 !important;
+  opacity: 1 !important;
+  font-weight: 500 !important;
+}
+
+.auth-modal-card .form-input:focus,
+.auth-modal-card .form-select:focus,
+.auth-input:focus,
+.modal-input:focus,
+.form-input:focus,
+input:focus {
+  background: #ffffff !important;
+  color: #000000 !important;
+  border-color: #000000 !important;
+  box-shadow: 0 0 0 3px rgba(0, 0, 0, 0.25) !important;
+}
+
+/* Chrome/Safari Browser Autofill Override */
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus,
+input:-webkit-autofill:active {
+  -webkit-text-fill-color: #000000 !important;
+  -webkit-box-shadow: 0 0 0px 1000px #ffffff inset !important;
+  transition: background-color 5000s ease-in-out 0s !important;
+  font-weight: 700 !important;
+}
