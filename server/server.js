@@ -539,6 +539,16 @@ function broadcastRoomSync(roomId) {
   }
 }
 
+// 1-second active room playback sync heartbeat interval
+setInterval(() => {
+  for (const roomId in rooms) {
+    const room = rooms[roomId];
+    if (room && room.users.length > 0 && room.isPlaying) {
+      broadcastRoomSync(roomId);
+    }
+  }
+}, 1000);
+
 io.on("connection", (socket) => {
   // 1. Create Room
   socket.on("create-room", ({ roomId, passcode, username, avatarColor }, callback) => {
@@ -797,6 +807,16 @@ io.on("connection", (socket) => {
     }
 
     broadcastRoomSync(roomId);
+  });
+
+  // Host playback timestamp heartbeat
+  socket.on("sync-time", ({ roomId, currentTime }) => {
+    const room = rooms[roomId];
+    if (!room) return;
+    if (socket.id === room.adminSocketId && typeof currentTime === "number" && currentTime >= 0) {
+      room.currentTime = currentTime;
+      room.lastUpdated = Date.now();
+    }
   });
 
   // 4. Request a Song to Play Next (Listener or Host)

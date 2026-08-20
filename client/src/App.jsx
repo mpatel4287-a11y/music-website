@@ -90,11 +90,18 @@ export default function App() {
   const bgAudioRef = useRef(null);
   const currentLineIndexRef = useRef(-1);
   const isSeekingRef = useRef(false);
+  const roomStateRef = useRef(null);
+  const isHostRef = useRef(false);
+  const roomIdRef = useRef("");
+  const lastHostSyncEmitRef = useRef(0);
 
   // Sync refs with state
   lyricsRef.current = lyrics;
   currentLineIndexRef.current = currentLineIndex;
   isSeekingRef.current = isSeeking;
+  roomStateRef.current = roomState;
+  isHostRef.current = isHost;
+  roomIdRef.current = roomId;
 
   // Helper for Toasts
   const showToast = useCallback((message, type = "info") => {
@@ -310,24 +317,62 @@ export default function App() {
     };
   }, [showToast]);
 
-  // 3. Audio & Lyrics Sync Ticker
+  // 3. Guaranteed 1-Second Audio & Lyrics Cross-Device Sync Engine
   useEffect(() => {
+    let tickCount = 0;
     const interval = setInterval(() => {
-      if (playerRef.current) {
+      tickCount++;
+      const player = playerRef.current;
+      const room = roomStateRef.current;
+
+      if (player) {
         try {
-          const time = playerRef.current.getCurrentTime() || 0;
-          const dur = playerRef.current.getDuration() || 1;
+          const time = player.getCurrentTime() || 0;
+          const dur = player.getDuration() || 1;
 
           if (!isSeekingRef.current) {
             setCurrentTime(time);
             setDuration(dur);
           }
 
+          // Synced Lyrics Index Ticker
           const currentLyrics = lyricsRef.current;
           if (currentLyrics?.type === "synced" && Array.isArray(currentLyrics.lines)) {
             const activeIdx = currentLyrics.lines.findLastIndex((l) => l.time <= time + 0.15);
             if (activeIdx !== currentLineIndexRef.current) {
               setCurrentLineIndex(activeIdx);
+            }
+          }
+
+          // A. Host Heartbeat: Transmit actual Host timestamp every 2 seconds
+          if (isHostRef.current && room?.isPlaying && roomIdRef.current) {
+            if (Date.now() - lastHostSyncEmitRef.current >= 2000) {
+              lastHostSyncEmitRef.current = Date.now();
+              socket.emit("sync-time", { roomId: roomIdRef.current, currentTime: time });
+            }
+          }
+
+          // B. 1-Second Listener Sync Check: Auto-Correct Drift & Play State
+          if (tickCount % 4 === 0 && room) {
+            let expectedTime = room.currentTime || 0;
+            if (room.isPlaying && room.lastUpdated) {
+              expectedTime += (Date.now() - room.lastUpdated) / 1000;
+            }
+
+            const playerState = typeof player.getPlayerState === "function" ? player.getPlayerState() : -1;
+
+            // 1. Force Play state if room is playing but player is paused/unstarted
+            if (room.isPlaying && (playerState === 2 || playerState === 5 || playerState === -1 || playerState === 0)) {
+              try { player.playVideo(); } catch (e) {}
+            } else if (!room.isPlaying && playerState === 1) {
+              try { player.pauseVideo(); } catch (e) {}
+            }
+
+            // 2. Auto-Seek if time drift exceeds 1.0 second
+            if (room.isPlaying && Math.abs(time - expectedTime) > 1.0 && !isSeekingRef.current) {
+              try {
+                player.seekTo(expectedTime, true);
+              } catch (e) {}
             }
           }
         } catch (e) {
