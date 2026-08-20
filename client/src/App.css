@@ -4928,3 +4928,67 @@ input:-webkit-autofill:active {
     gap: 1rem !important;
   }
 }
+
+/* ==========================================================================
+   17. INPUT ICON PADDING & TAB BUTTON OVERFLOW FIXES
+   ========================================================================== */
+
+/* Fix input icons colliding with text/placeholders */
+.input-with-icon,
+.search-input-group,
+.search-input-wrap,
+.search-bar-form,
+.participants-search-bar {
+  position: relative !important;
+  display: flex !important;
+  align-items: center !important;
+  width: 100% !important;
+}
+
+.input-with-icon input,
+.search-input-group input,
+.search-input-wrap input,
+.search-main-input,
+.participants-search-bar input,
+.input-field {
+  padding-left: 2.85rem !important;
+  width: 100% !important;
+  box-sizing: border-box !important;
+}
+
+.input-with-icon .input-icon,
+.search-input-group .search-icon,
+.search-input-wrap .search-icon,
+.participants-search-bar .search-icon {
+  position: absolute !important;
+  left: 0.9rem !important;
+  top: 50% !important;
+  transform: translateY(-50%) !important;
+  pointer-events: none !important;
+  z-index: 5 !important;
+  color: #000000 !important;
+}
+
+/* Fix tab button text/icon clipping and overflow */
+.studio-tab-nav,
+.tabs-nav,
+.sidebar-tabs {
+  display: flex !important;
+  gap: 0.4rem !important;
+  align-items: center !important;
+  flex-wrap: nowrap !important;
+  overflow-x: auto !important;
+  width: 100% !important;
+}
+
+.studio-tab-btn,
+.tab-btn {
+  padding: 0.5rem 0.85rem !important;
+  white-space: nowrap !important;
+  min-width: max-content !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 0.4rem !important;
+  border-radius: 12px !important;
+}

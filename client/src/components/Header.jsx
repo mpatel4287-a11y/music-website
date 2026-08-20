@@ -60,7 +60,7 @@ function Header({
           <div className="logo-icon-pulse">
             <Disc3 size={24} className="spin-slow text-accent" />
           </div>
-          <span className="brand-name pixel-font-title">MUSIC2D</span>
+          <span className="brand-name pixel-font-title">Musync</span>
         </div>
 
 
