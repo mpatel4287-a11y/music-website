@@ -214,15 +214,29 @@ function Header({
           </span>
         </div>
 
-        {/* Leave Room Button */}
+        {/* Leave / Exit Room Button */}
         {roomId && (
           <button
             type="button"
             className="leave-room-btn"
             onClick={onLeaveRoom}
-            title="Leave this room"
+            title="Exit this room"
+            style={{
+              background: "#ef4444",
+              color: "#ffffff",
+              border: "1.5px solid #000000",
+              padding: "0.35rem 0.75rem",
+              borderRadius: "9999px",
+              fontWeight: "700",
+              fontSize: "0.82rem",
+              cursor: "pointer",
+              display: "inline-flex",
+              alignItems: "center",
+              gap: "0.35rem",
+            }}
           >
-            <LogOut size={16} />
+            <LogOut size={14} />
+            <span>Exit Room</span>
           </button>
         )}
       </div>

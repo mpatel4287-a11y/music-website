@@ -15,6 +15,7 @@ import ToastNotification from "./components/ToastNotification";
 import MobileNav from "./components/MobileNav";
 import NicknameModal from "./components/NicknameModal";
 import DashboardView from "./components/DashboardView";
+import LeaveConfirmModal from "./components/LeaveConfirmModal";
 
 import "./App.css";
 
@@ -35,6 +36,7 @@ export default function App() {
   const [viewMode, setViewMode] = useState("dashboard");
   const [isNicknameModalOpen, setIsNicknameModalOpen] = useState(false);
   const [isCreateJoinModalOpen, setIsCreateJoinModalOpen] = useState(false);
+  const [isLeaveConfirmOpen, setIsLeaveConfirmOpen] = useState(false);
 
   // Session & Room State
   const [inRoom, setInRoom] = useState(false);
@@ -730,14 +732,26 @@ export default function App() {
     [roomId]
   );
 
-  // Leave Room (Explicit exit)
+  // Trigger Exit Room confirmation modal
   const handleLeaveRoom = useCallback(() => {
+    setIsLeaveConfirmOpen(true);
+  }, []);
+
+  // Execute Leave Room after user confirmation
+  const confirmLeaveRoom = useCallback(() => {
+    setIsLeaveConfirmOpen(false);
     localStorage.removeItem("musync_active_room");
-    socket.emit("leave-room", { roomId });
+    if (roomId) {
+      socket.emit("leave-room", { roomId });
+    }
     setInRoom(false);
     setRoomState(null);
-    window.location.href = window.location.pathname;
-  }, [roomId]);
+    setRoomId("");
+    setPasscode("");
+    setViewMode("dashboard");
+    window.history.pushState({}, "", window.location.pathname);
+    showToast("Left room and returned to Dashboard", "info");
+  }, [roomId, showToast]);
 
   // Auto-advance song when video finishes (if Host)
   const handleVideoEnded = useCallback(() => {
@@ -1023,6 +1037,14 @@ export default function App() {
         isOpen={isShareModalOpen}
         onClose={() => setIsShareModalOpen(false)}
         showToast={showToast}
+      />
+
+      {/* Exit Room Confirmation Modal */}
+      <LeaveConfirmModal
+        isOpen={isLeaveConfirmOpen}
+        onClose={() => setIsLeaveConfirmOpen(false)}
+        onConfirm={confirmLeaveRoom}
+        roomId={roomId}
       />
 
       {/* Participants & Host Moderation Modal */}
