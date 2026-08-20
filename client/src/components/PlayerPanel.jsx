@@ -107,23 +107,11 @@ function PlayerPanel({
         </div>
       </div>
 
-      {/* Song Metadata & Pixel Category Tag / Like Counter */}
+      {/* Song Metadata */}
       <div className="track-meta-section">
         <h2 className="track-title pixel-heading" title={roomState?.trackTitle || "The Suffering"}>
           {roomState?.trackTitle || "The Suffering"}
         </h2>
-        <div className="track-meta-pills-row">
-          <span className="category-pill-tag solid-black">Classic</span>
-          <button
-            type="button"
-            className={`like-counter-btn ${hasLiked ? "liked" : ""}`}
-            onClick={handleLike}
-            title="Like track"
-          >
-            <Plus size={13} />
-            <span>{likedCount}</span>
-          </button>
-        </div>
       </div>
 
       {/* Audio Waveform Level Visualizer (Black Vertical Bars) & Time */}

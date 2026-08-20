@@ -4753,3 +4753,178 @@ input:-webkit-autofill:active {
   transition: background-color 5000s ease-in-out 0s !important;
   font-weight: 700 !important;
 }
+
+/* ==========================================================================
+   16. CREATE/JOIN ROOM MODAL B&W PIXEL OVERRIDES & MOBILE PHONE RESPONSIVENESS
+   ========================================================================== */
+
+/* Create & Join Room Modal Overrides */
+.onboarding-overlay {
+  background: #dcdce0 !important;
+  color: #000000 !important;
+  width: 100% !important;
+  min-height: calc(100vh - 68px) !important;
+  padding: 2rem 1rem !important;
+}
+
+.onboarding-backdrop-glow {
+  display: none !important;
+}
+
+.onboarding-container {
+  max-width: 520px !important;
+  margin: 0 auto !important;
+}
+
+.onboarding-brand .brand-title {
+  font-family: var(--font-heading-pixel), 'Silkscreen', monospace !important;
+  color: #000000 !important;
+  text-shadow: none !important;
+}
+
+.onboarding-brand .brand-tagline {
+  color: #444444 !important;
+  font-weight: 600 !important;
+}
+
+.brand-badge {
+  background: #000000 !important;
+  color: #ffffff !important;
+  border: none !important;
+  border-radius: 9999px !important;
+  font-weight: 700 !important;
+}
+
+.identity-card,
+.room-tabs-card,
+.passcode-toggle-card {
+  background: #ffffff !important;
+  border: 2px solid #000000 !important;
+  border-radius: 20px !important;
+  color: #000000 !important;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08) !important;
+}
+
+.identity-title,
+.toggle-title,
+.form-group label,
+.tabs-nav span {
+  color: #000000 !important;
+  font-weight: 800 !important;
+}
+
+.randomize-btn,
+.text-link-btn {
+  color: #000000 !important;
+  font-weight: 700 !important;
+  text-decoration: underline !important;
+}
+
+.input-field,
+.input-with-icon input {
+  background: #ffffff !important;
+  color: #000000 !important;
+  border: 2px solid #000000 !important;
+  border-radius: 10px !important;
+  font-weight: 700 !important;
+  caret-color: #000000 !important;
+}
+
+.input-icon {
+  color: #000000 !important;
+}
+
+.tab-btn {
+  background: #ffffff !important;
+  color: #000000 !important;
+  border: 1.5px solid #000000 !important;
+  font-weight: 700 !important;
+  border-radius: 12px !important;
+}
+
+.tab-btn.active {
+  background: #000000 !important;
+  color: #ffffff !important;
+  border: 1.5px solid #000000 !important;
+}
+
+.submit-action-btn {
+  background: #000000 !important;
+  color: #ffffff !important;
+  border: none !important;
+  border-radius: 9999px !important;
+  font-family: var(--font-heading-pixel), 'Silkscreen', monospace !important;
+  font-weight: 700 !important;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.25) !important;
+}
+
+.feature-pill {
+  background: #ffffff !important;
+  border: 1.5px solid #000000 !important;
+  color: #000000 !important;
+  font-weight: 700 !important;
+  border-radius: 9999px !important;
+}
+
+.pill-dot {
+  background: #000000 !important;
+}
+
+/* ==========================================================================
+   MOBILE PHONES RESPONSIVENESS (<= 768px)
+   ========================================================================== */
+@media (max-width: 768px) {
+  html, body, #root, .musync-app-root {
+    height: auto !important;
+    min-height: 100vh !important;
+    overflow-y: auto !important;
+  }
+
+  .app-header {
+    padding: 0 0.85rem !important;
+    height: 60px !important;
+  }
+
+  .dashboard-container {
+    padding: 1rem 0.85rem 3rem 0.85rem !important;
+    height: auto !important;
+    min-height: calc(100vh - 60px) !important;
+  }
+
+  .onboarding-overlay {
+    padding: 1rem 0.75rem !important;
+    min-height: calc(100vh - 60px) !important;
+  }
+
+  .onboarding-container {
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+
+  .main-lounge-grid {
+    display: flex !important;
+    flex-direction: column !important;
+    padding: 0.85rem !important;
+    height: auto !important;
+    gap: 1rem !important;
+  }
+
+  .vinyl-record-disc {
+    width: 180px !important;
+    height: 180px !important;
+  }
+
+  .player-deck-frame {
+    padding: 1rem !important;
+  }
+
+  .dashboard-hero-card {
+    padding: 1.25rem 1rem !important;
+  }
+
+  .hero-content-group {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    gap: 1rem !important;
+  }
+}
