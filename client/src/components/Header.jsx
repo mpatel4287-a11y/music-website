@@ -178,25 +178,41 @@ function Header({
 
 
 
-        {/* User Nickname Badge */}
-        <button
-          type="button"
-          className="listeners-avatar-stack-btn"
-          onClick={onOpenNicknameModal}
-          title="Click to edit display nickname"
-          style={{ cursor: "pointer", background: "#ffffff", color: "#000000", border: "1.5px solid #000000" }}
+        {/* User Nickname Badge (Static) */}
+        <div
+          className="current-user-chip"
+          style={{
+            background: "#ffffff",
+            color: "#000000",
+            border: "1.5px solid #000000",
+            padding: "0.25rem 0.75rem",
+            borderRadius: "9999px",
+            display: "flex",
+            alignItems: "center",
+            gap: "0.45rem",
+          }}
         >
           <div
-            className="user-avatar-chip"
-            style={{ backgroundColor: avatarColor || "#8b5cf6", color: "#ffffff", fontWeight: "800" }}
+            className="profile-avatar-circle"
+            style={{
+              backgroundColor: avatarColor || "#8b5cf6",
+              color: "#ffffff",
+              fontWeight: "800",
+              width: "24px",
+              height: "24px",
+              borderRadius: "50%",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              fontSize: "0.8rem",
+            }}
           >
             {username ? username.charAt(0).toUpperCase() : "U"}
           </div>
-          <span style={{ fontSize: "0.85rem", fontWeight: "700", marginLeft: "0.3rem" }}>
-            {username || "Set Nickname"}
+          <span style={{ fontSize: "0.85rem", fontWeight: "700" }}>
+            {username || "Listener"}
           </span>
-          <Edit2 size={13} style={{ marginLeft: "0.2rem", opacity: 0.7 }} />
-        </button>
+        </div>
 
         {/* Leave Room Button */}
         {roomId && (
