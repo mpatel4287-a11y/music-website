@@ -1,0 +1,109 @@
+:root {
+  --font-sans: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --font-display: 'Pixelify Sans', 'Silkscreen', 'Outfit', var(--font-sans);
+  --font-pixel: 'Pixelify Sans', 'Silkscreen', 'Press Start 2P', monospace;
+  --font-heading-pixel: 'Silkscreen', 'Pixelify Sans', monospace;
+  --font-mono: 'JetBrains Mono', monospace;
+
+  /* Permanent Single Theme: B&W Retro Pixel Aesthetic (MUSIC2D) */
+  --bg-primary: #dcdce0;
+  --bg-surface: #ffffff;
+  --bg-surface-elevated: #f5f5f8;
+  --bg-surface-hover: #eaeaea;
+  
+  --border-subtle: rgba(0, 0, 0, 0.18);
+  --border-dark: #111111;
+  --border-glow: rgba(0, 0, 0, 0.25);
+  
+  --accent-primary: #000000;
+  --accent-secondary: #27272a;
+  --accent-gradient: linear-gradient(135deg, #000000 0%, #27272a 100%);
+  --accent-glow: 0 4px 20px rgba(0, 0, 0, 0.15);
+  
+  --text-main: #09090b;
+  --text-muted: #3f3f46;
+  --text-dim: #71717a;
+  
+  --success: #16a34a;
+  --warning: #d97706;
+  --danger: #dc2626;
+
+  /* Retro Metallic Turntable Tokens */
+  --deck-metal-bg: linear-gradient(145deg, #cfd0d5 0%, #b8b9c0 50%, #d8d9de 100%);
+  --deck-metal-shadow: 0 20px 40px rgba(0, 0, 0, 0.35);
+  --vinyl-center-badge: #e4e2dd;
+}
+
+
+
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html, body {
+  width: 100%;
+  min-height: 100vh;
+  background-color: var(--bg-primary);
+  color: var(--text-main);
+  font-family: var(--font-sans);
+  overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+#root {
+  width: 100%;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 9999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(139, 92, 246, 0.5);
+}
+
+/* Range input slider styling */
+input[type="range"] {
+  -webkit-appearance: none;
+  appearance: none;
+  background: rgba(255, 255, 255, 0.12);
+  border-radius: 10px;
+  outline: none;
+}
+
+input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: #fff;
+  cursor: pointer;
+  box-shadow: 0 0 10px rgba(139, 92, 246, 0.8);
+  transition: transform 0.15s ease;
+}
+
+input[type="range"]::-webkit-slider-thumb:hover {
+  transform: scale(1.3);
+}
+
+button {
+  font-family: var(--font-sans);
+}
