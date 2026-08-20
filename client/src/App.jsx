@@ -20,9 +20,10 @@ import "./App.css";
 
 // Dynamic socket backend URL detection
 const BACKEND_URL =
-  window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1"
+  import.meta.env.VITE_BACKEND_URL ||
+  (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1"
     ? "http://localhost:5000"
-    : window.location.origin;
+    : window.location.origin);
 
 const socket = io(BACKEND_URL, {
   transports: ["websocket", "polling"],
