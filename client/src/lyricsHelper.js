@@ -1,7 +1,7 @@
 // client/src/lyricsHelper.js
 
-// Cleans messy YouTube titles into search-friendly song titles and artists
-export function parseYouTubeMetadata(rawTitle, rawArtist) {
+// Cleans raw titles into search-friendly song titles and artists
+export function parseTrackMetadata(rawTitle, rawArtist) {
   let title = rawTitle || "";
   let artist = rawArtist || "";
 
@@ -39,7 +39,7 @@ export function parseYouTubeMetadata(rawTitle, rawArtist) {
 }
 
 export async function fetchLyrics(rawTitle, rawArtist = "") {
-  const { cleanTitle, cleanArtist } = parseYouTubeMetadata(rawTitle, rawArtist);
+  const { cleanTitle, cleanArtist } = parseTrackMetadata(rawTitle, rawArtist);
 
   try {
     // Strategy 1: Direct search using Clean Title + Artist

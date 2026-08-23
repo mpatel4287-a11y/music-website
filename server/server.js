@@ -5,6 +5,14 @@ const cors = require("cors");
 const ytSearch = require("yt-search");
 const bcrypt = require("bcryptjs");
 
+// Prevent server process crashes from unhandled errors or rejection
+process.on("uncaughtException", (err) => {
+  console.error("⚠️ Global Uncaught Exception (prevented crash):", err?.message || err);
+});
+process.on("unhandledRejection", (reason) => {
+  console.error("⚠️ Global Unhandled Rejection (prevented crash):", reason?.message || reason);
+});
+
 const app = express();
 app.use(cors());
 app.use(express.json());
@@ -17,7 +25,7 @@ const io = new Server(server, {
   },
 });
 
-// YouTube Search Endpoint via yt-search
+// Music Search Endpoint via yt-search
 app.get("/api/search", async (req, res) => {
   const query = req.query.q;
   if (!query) {
@@ -541,11 +549,15 @@ function broadcastRoomSync(roomId) {
 
 // 1-second active room playback sync heartbeat interval
 setInterval(() => {
-  for (const roomId in rooms) {
-    const room = rooms[roomId];
-    if (room && room.users.length > 0 && room.isPlaying) {
-      broadcastRoomSync(roomId);
+  try {
+    for (const roomId in rooms) {
+      const room = rooms[roomId];
+      if (room && room.users && room.users.length > 0 && room.isPlaying) {
+        broadcastRoomSync(roomId);
+      }
     }
+  } catch (err) {
+    console.error("Heartbeat interval error:", err?.message || err);
   }
 }, 1000);
 

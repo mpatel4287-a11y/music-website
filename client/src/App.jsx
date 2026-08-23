@@ -96,6 +96,7 @@ export default function App() {
   const isHostRef = useRef(false);
   const roomIdRef = useRef("");
   const lastHostSyncEmitRef = useRef(0);
+  const lastAutoSeekRef = useRef(0);
 
   // Sync refs with state
   lyricsRef.current = lyrics;
@@ -229,7 +230,7 @@ export default function App() {
         });
       }
 
-      // Synchronize YouTube audio
+      // Synchronize music audio engine
       if (playerRef.current) {
         const player = playerRef.current;
         try {
@@ -319,6 +320,15 @@ export default function App() {
     };
   }, [showToast]);
 
+  // Auto-scroll to top when switching views or opening modals
+  useEffect(() => {
+    try {
+      window.scrollTo({ top: 0, left: 0, behavior: "instant" });
+    } catch (e) {
+      window.scrollTo(0, 0);
+    }
+  }, [viewMode, isCreateJoinModalOpen, isNicknameModalOpen, inRoom]);
+
   // 3. Guaranteed 1-Second Audio & Lyrics Cross-Device Sync Engine
   useEffect(() => {
     let tickCount = 0;
@@ -354,7 +364,7 @@ export default function App() {
             }
           }
 
-          // B. 1-Second Listener Sync Check: Auto-Correct Drift & Play State
+          // B. Smooth Cross-Device Sync Check: Auto-Correct Drift & Play State
           if (tickCount % 4 === 0 && room) {
             let expectedTime = room.currentTime || 0;
             if (room.isPlaying && room.lastUpdated) {
@@ -363,18 +373,30 @@ export default function App() {
 
             const playerState = typeof player.getPlayerState === "function" ? player.getPlayerState() : -1;
 
-            // 1. Force Play state if room is playing but player is paused/unstarted
-            if (room.isPlaying && (playerState === 2 || playerState === 5 || playerState === -1 || playerState === 0)) {
-              try { player.playVideo(); } catch (e) {}
-            } else if (!room.isPlaying && playerState === 1) {
-              try { player.pauseVideo(); } catch (e) {}
-            }
+            // Do not intervene if player is actively buffering (playerState 3)
+            if (playerState !== 3) {
+              // 1. Force Play state if room is playing but player is strictly paused, cued, or unstarted
+              if (room.isPlaying && (playerState === 2 || playerState === 5 || playerState === 0 || playerState === -1)) {
+                try { player.playVideo(); } catch (e) {}
+              } else if (!room.isPlaying && playerState === 1) {
+                try { player.pauseVideo(); } catch (e) {}
+              }
 
-            // 2. Auto-Seek if time drift exceeds 1.0 second
-            if (room.isPlaying && Math.abs(time - expectedTime) > 1.0 && !isSeekingRef.current) {
-              try {
-                player.seekTo(expectedTime, true);
-              } catch (e) {}
+              // 2. Smooth Auto-Seek ONLY if time drift exceeds 3.5s and 6s cooldown passed
+              // (Eliminates continuous micro-jumping stuttering during normal playback)
+              const timeDrift = Math.abs(time - expectedTime);
+              const now = Date.now();
+              if (
+                room.isPlaying &&
+                timeDrift > 3.5 &&
+                !isSeekingRef.current &&
+                now - lastAutoSeekRef.current > 6000
+              ) {
+                lastAutoSeekRef.current = now;
+                try {
+                  player.seekTo(expectedTime, true);
+                } catch (e) {}
+              }
             }
           }
         } catch (e) {
@@ -483,7 +505,7 @@ export default function App() {
     [showToast]
   );
 
-  // Search YouTube
+  // Search music tracks
   const handleSearch = useCallback(
     async (query) => {
       if (!query.trim()) return;
@@ -832,7 +854,7 @@ export default function App() {
         style={{ display: "none" }}
       />
 
-      {/* Invisible YouTube Audio Engine */}
+      {/* Invisible Musync Audio Engine */}
       <div className="hidden-youtube-engine">
         <YouTube
           videoId={roomState?.videoId || "jfKfPfyJRdk"}

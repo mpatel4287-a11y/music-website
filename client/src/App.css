@@ -14,14 +14,14 @@
   position: relative;
 }
 
-/* Hidden YouTube Host */
+/* Hidden Audio Engine Host */
 .hidden-youtube-engine {
-  position: fixed;
+  position: absolute;
   top: -9999px;
   left: -9999px;
   width: 1px;
   height: 1px;
-  opacity: 0.001;
+  opacity: 0;
   pointer-events: none;
 }
 
@@ -2922,7 +2922,7 @@ input:checked + .slider:before {
 }
 
 /* ==========================================================================
-   11. PERSONALIZED SPOTIFY/YOUTUBE DASHBOARD & AUTH MODAL STYLES
+   11. PERSONALIZED MUSYNC MUSIC DASHBOARD & AUTH MODAL STYLES
    ========================================================================== */
 .view-mode-toggle-btn {
   display: flex;
@@ -4758,13 +4758,26 @@ input:-webkit-autofill:active {
    16. CREATE/JOIN ROOM MODAL B&W PIXEL OVERRIDES & MOBILE PHONE RESPONSIVENESS
    ========================================================================== */
 
-/* Create & Join Room Modal Overrides */
-.onboarding-overlay {
-  background: #dcdce0 !important;
-  color: #000000 !important;
-  width: 100% !important;
-  min-height: calc(100vh - 68px) !important;
-  padding: 2rem 1rem !important;
+/* Create & Join Room Modal Overrides - Fixed Viewport Overlay */
+.onboarding-overlay,
+.create-join-overlay {
+  position: fixed !important;
+  top: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  bottom: 0 !important;
+  width: 100vw !important;
+  height: 100vh !important;
+  z-index: 999999 !important;
+  background: rgba(220, 220, 224, 0.98) !important;
+  backdrop-filter: blur(12px) !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  padding: 1rem !important;
+  overflow-y: auto !important;
+  box-sizing: border-box !important;
+  -webkit-overflow-scrolling: touch !important;
 }
 
 .onboarding-backdrop-glow {
@@ -4773,7 +4786,8 @@ input:-webkit-autofill:active {
 
 .onboarding-container {
   max-width: 520px !important;
-  margin: 0 auto !important;
+  width: 100% !important;
+  margin: auto !important;
 }
 
 .onboarding-brand .brand-title {
@@ -4891,9 +4905,15 @@ input:-webkit-autofill:active {
     min-height: calc(100vh - 60px) !important;
   }
 
-  .onboarding-overlay {
+  .onboarding-overlay,
+  .create-join-overlay {
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    width: 100vw !important;
+    height: 100vh !important;
+    z-index: 999999 !important;
     padding: 1rem 0.75rem !important;
-    min-height: calc(100vh - 60px) !important;
   }
 
   .onboarding-container {

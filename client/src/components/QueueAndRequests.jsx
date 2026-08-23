@@ -164,7 +164,7 @@ function QueueAndRequests({
                 <input
                   type="text"
                   className="search-main-input"
-                  placeholder="Search song title, artist, or YouTube query..."
+                  placeholder="Search song title, artist, or music track..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                 />
@@ -210,7 +210,7 @@ function QueueAndRequests({
               {isSearching ? (
                 <div className="tab-loading-state">
                   <div className="spinner-md text-accent"></div>
-                  <p>Searching YouTube tracks...</p>
+                  <p>Searching music tracks...</p>
                 </div>
               ) : searchResults.length > 0 ? (
                 searchResults.map((song) => {
