@@ -97,6 +97,7 @@ export default function App() {
   const roomIdRef = useRef("");
   const lastHostSyncEmitRef = useRef(0);
   const lastAutoSeekRef = useRef(0);
+  const searchCacheRef = useRef({});
 
   // Sync refs with state
   lyricsRef.current = lyrics;
@@ -509,11 +510,21 @@ export default function App() {
   const handleSearch = useCallback(
     async (query) => {
       if (!query.trim()) return;
+      const cleanKey = query.trim().toLowerCase();
+
+      if (searchCacheRef.current[cleanKey]) {
+        setSearchResults(searchCacheRef.current[cleanKey]);
+        setIsSearching(false);
+        return;
+      }
+
       setIsSearching(true);
       try {
         const res = await fetch(`${BACKEND_URL}/api/search?q=${encodeURIComponent(query)}`);
         const data = await res.json();
-        setSearchResults(data.results || []);
+        const results = data.results || [];
+        searchCacheRef.current[cleanKey] = results;
+        setSearchResults(results);
       } catch (err) {
         console.error("Search error:", err);
         showToast("Could not fetch search results. Check connection.", "error");
@@ -1048,6 +1059,7 @@ export default function App() {
           onTabChange={setActiveMobileTab}
           isPlaying={Boolean(roomState?.isPlaying)}
           requestsCount={roomState?.requests?.length || 0}
+          onLeaveRoom={handleLeaveRoom}
         />
       )}
 

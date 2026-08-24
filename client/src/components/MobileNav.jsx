@@ -1,7 +1,7 @@
 import React, { memo } from "react";
-import { Disc3, AlignLeft, MessageSquare, Radio } from "lucide-react";
+import { Disc3, AlignLeft, MessageSquare, LogOut } from "lucide-react";
 
-function MobileNav({ activeTab, onTabChange, isPlaying, requestsCount = 0 }) {
+function MobileNav({ activeTab, onTabChange, isPlaying, requestsCount = 0, onLeaveRoom }) {
   return (
     <nav className="mobile-bottom-nav">
       {/* Player Tab */}
@@ -46,6 +46,21 @@ function MobileNav({ activeTab, onTabChange, isPlaying, requestsCount = 0 }) {
         </div>
         <span className="nav-label">Lounge</span>
       </button>
+
+      {/* Exit Room Action Button (Triggers LeaveConfirmModal) */}
+      {onLeaveRoom && (
+        <button
+          type="button"
+          className="mobile-nav-btn leave-btn"
+          onClick={onLeaveRoom}
+          title="Exit Room (with confirmation)"
+        >
+          <div className="nav-icon-wrapper text-danger">
+            <LogOut size={20} />
+          </div>
+          <span className="nav-label text-danger">Exit</span>
+        </button>
+      )}
     </nav>
   );
 }

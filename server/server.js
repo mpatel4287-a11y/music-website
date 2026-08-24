@@ -25,11 +25,21 @@ const io = new Server(server, {
   },
 });
 
-// Music Search Endpoint via yt-search
+// In-Memory Search Cache (Map: query -> { timestamp, results })
+const searchCache = new Map();
+const SEARCH_CACHE_TTL = 30 * 60 * 1000; // 30 minutes
+
+// Music Search Endpoint via yt-search (Cached for High Performance)
 app.get("/api/search", async (req, res) => {
   const query = req.query.q;
   if (!query) {
     return res.status(400).json({ error: "Query parameter 'q' is required" });
+  }
+
+  const cleanKey = query.trim().toLowerCase();
+  const cached = searchCache.get(cleanKey);
+  if (cached && Date.now() - cached.timestamp < SEARCH_CACHE_TTL) {
+    return res.json({ results: cached.results, cached: true });
   }
 
   try {
@@ -45,9 +55,13 @@ app.get("/api/search", async (req, res) => {
       seconds: v.seconds || 180,
     }));
 
+    searchCache.set(cleanKey, { timestamp: Date.now(), results });
     res.json({ results });
   } catch (error) {
     console.error("Search error:", error.message);
+    if (cached) {
+      return res.json({ results: cached.results, fallback: true });
+    }
     res.status(500).json({ error: "Failed to fetch YouTube search results", details: error.message });
   }
 });
@@ -409,29 +423,38 @@ const CURATED_SINGLE_SONGS = {
   ],
 };
 
-// 5. Trending Music Single Songs API (100% Single Tracks 2-5 mins, Zero Compilations)
-app.get("/api/recommendations", async (req, res) => {
-  const genreKey = (req.query.genre || "all").toLowerCase();
-  const userCountry = (req.query.country || "").toLowerCase();
+// High-Speed Recommendations Cache Map (genre -> { timestamp, items })
+const recommendationsCache = {};
+const RECS_CACHE_TTL = 60 * 60 * 1000; // 1 hour
 
-  const isIndia = genreKey === "india" || userCountry.includes("india") || userCountry.includes("in");
-  const targetCategory = (genreKey in SINGLE_SONG_QUERIES)
-    ? genreKey
-    : (isIndia ? "india" : "all");
+function getCuratedFallback(category) {
+  const curated = CURATED_SINGLE_SONGS[category] || CURATED_SINGLE_SONGS.all;
+  return curated.map((item) => ({
+    ...item,
+    thumbnail: item.thumbnail || `https://img.youtube.com/vi/${item.videoId}/hqdefault.jpg`,
+    genre: category,
+    isSingleTrack: true,
+  }));
+}
 
+async function refreshCategoryRecommendations(targetCategory) {
   const queries = SINGLE_SONG_QUERIES[targetCategory] || SINGLE_SONG_QUERIES.all;
-
   try {
-    const searchPromises = queries.slice(0, 10).map(async (query) => {
+    const searchPromises = queries.slice(0, 8).map(async (query) => {
       try {
         const r = await ytSearch(query);
         const videos = r.videos || [];
-        // Strict single track filter: Must be between 90s (1.5 mins) and 330s (5.5 mins)
         const match = videos.find((v) => {
           const sec = v.seconds || 0;
           if (sec < 90 || sec > 330) return false;
           const title = (v.title || "").toLowerCase();
-          return !title.includes("compilation") && !title.includes("hours") && !title.includes("full album") && !title.includes("jukebox") && !title.includes("relaxing");
+          return (
+            !title.includes("compilation") &&
+            !title.includes("hours") &&
+            !title.includes("full album") &&
+            !title.includes("jukebox") &&
+            !title.includes("relaxing")
+          );
         });
 
         if (match) {
@@ -453,31 +476,54 @@ app.get("/api/recommendations", async (req, res) => {
     });
 
     const results = await Promise.all(searchPromises);
-    const validRecommendations = results.filter(Boolean);
-
-    // If live search returned results, send them
-    if (validRecommendations.length >= 2) {
-      return res.json({ recommendations: validRecommendations });
+    const valid = results.filter(Boolean);
+    if (valid.length >= 2) {
+      recommendationsCache[targetCategory] = {
+        timestamp: Date.now(),
+        items: valid,
+      };
     }
-
-    // Fallback curated list
-    const fallbackCurated = CURATED_SINGLE_SONGS[targetCategory] || CURATED_SINGLE_SONGS.all;
-    const formattedFallback = fallbackCurated.map((item) => ({
-      ...item,
-      thumbnail: `https://img.youtube.com/vi/${item.videoId}/hqdefault.jpg`,
-      isSingleTrack: true,
-    }));
-
-    res.json({ recommendations: formattedFallback });
-  } catch (err) {
-    const fallbackCurated = CURATED_SINGLE_SONGS[targetCategory] || CURATED_SINGLE_SONGS.all;
-    const formattedFallback = fallbackCurated.map((item) => ({
-      ...item,
-      thumbnail: `https://img.youtube.com/vi/${item.videoId}/hqdefault.jpg`,
-      isSingleTrack: true,
-    }));
-    res.json({ recommendations: formattedFallback });
+  } catch (e) {
+    // Ignore background refresh errors
   }
+}
+
+// Pre-seed recommendations cache with curated songs immediately for 0ms response
+for (const cat in CURATED_SINGLE_SONGS) {
+  recommendationsCache[cat] = {
+    timestamp: Date.now(),
+    items: getCuratedFallback(cat),
+  };
+}
+
+// 5. Trending Music Single Songs API (100% Instant Cached Response <5ms)
+app.get("/api/recommendations", (req, res) => {
+  const genreKey = (req.query.genre || "all").toLowerCase();
+  const userCountry = (req.query.country || "").toLowerCase();
+
+  const isIndia = genreKey === "india" || userCountry.includes("india") || userCountry.includes("in");
+  const targetCategory = (genreKey in SINGLE_SONG_QUERIES)
+    ? genreKey
+    : (isIndia ? "india" : "all");
+
+  const cached = recommendationsCache[targetCategory];
+
+  if (cached && cached.items && cached.items.length > 0) {
+    // Respond INSTANTLY (<5ms)
+    res.json({ recommendations: cached.items });
+
+    // Refresh background cache asynchronously if stale (> 1 hour)
+    if (Date.now() - cached.timestamp > RECS_CACHE_TTL) {
+      refreshCategoryRecommendations(targetCategory);
+    }
+    return;
+  }
+
+  // Fallback if missing
+  const fallback = getCuratedFallback(targetCategory);
+  recommendationsCache[targetCategory] = { timestamp: Date.now(), items: fallback };
+  res.json({ recommendations: fallback });
+  refreshCategoryRecommendations(targetCategory);
 });
 
 const rooms = {};

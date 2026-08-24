@@ -121,10 +121,18 @@ export default function DashboardView({
     }
   };
 
+  const recsCacheRef = useRef({});
+
   // Fetch Recommendations based on selected genre and country location
   useEffect(() => {
     let isMounted = true;
-    setIsLoadingRecs(true);
+
+    if (recsCacheRef.current[selectedGenreTab]) {
+      setRecommendations(recsCacheRef.current[selectedGenreTab]);
+      setIsLoadingRecs(false);
+    } else {
+      setIsLoadingRecs(true);
+    }
 
     const countryParam = userLocation?.country || "India";
     const apiUrl = `${backendUrl}/api/recommendations?genre=${encodeURIComponent(
@@ -135,7 +143,9 @@ export default function DashboardView({
       .then((res) => res.json())
       .then((data) => {
         if (isMounted) {
-          setRecommendations(data.recommendations || []);
+          const recs = data.recommendations || [];
+          recsCacheRef.current[selectedGenreTab] = recs;
+          setRecommendations(recs);
           setIsLoadingRecs(false);
         }
       })

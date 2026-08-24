@@ -56,7 +56,7 @@ function Header({
           <div className="logo-icon-pulse">
             <Disc3 size={24} className="spin-slow text-accent" />
           </div>
-          <span className="brand-name pixel-font-title">Musync</span>
+          <span className={`brand-name pixel-font-title ${roomId ? "desktop-only" : ""}`}>Musync</span>
         </div>
 
 
@@ -178,65 +178,31 @@ function Header({
 
 
 
-        {/* User Nickname Badge (Static) */}
-        <div
-          className="current-user-chip"
-          style={{
-            background: "#ffffff",
-            color: "#000000",
-            border: "1.5px solid #000000",
-            padding: "0.25rem 0.75rem",
-            borderRadius: "9999px",
-            display: "flex",
-            alignItems: "center",
-            gap: "0.45rem",
-          }}
-        >
+        {/* User Nickname Badge */}
+        <div className="current-user-chip" title={`Logged in as ${username || "Listener"}`}>
           <div
             className="profile-avatar-circle"
             style={{
               backgroundColor: avatarColor || "#8b5cf6",
-              color: "#ffffff",
-              fontWeight: "800",
-              width: "24px",
-              height: "24px",
-              borderRadius: "50%",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              fontSize: "0.8rem",
             }}
           >
             {username ? username.charAt(0).toUpperCase() : "U"}
           </div>
-          <span style={{ fontSize: "0.85rem", fontWeight: "700" }}>
+          <span className="desktop-only username-label">
             {username || "Listener"}
           </span>
         </div>
 
-        {/* Leave / Exit Room Button */}
+        {/* Leave / Exit Room Button with Confirmation Trigger */}
         {roomId && (
           <button
             type="button"
             className="leave-room-btn"
             onClick={onLeaveRoom}
-            title="Exit this room"
-            style={{
-              background: "#ef4444",
-              color: "#ffffff",
-              border: "1.5px solid #000000",
-              padding: "0.35rem 0.75rem",
-              borderRadius: "9999px",
-              fontWeight: "700",
-              fontSize: "0.82rem",
-              cursor: "pointer",
-              display: "inline-flex",
-              alignItems: "center",
-              gap: "0.35rem",
-            }}
+            title="Exit this room (with confirmation)"
           >
-            <LogOut size={14} />
-            <span>Exit Room</span>
+            <LogOut size={15} />
+            <span className="desktop-only">Exit Room</span>
           </button>
         )}
       </div>
