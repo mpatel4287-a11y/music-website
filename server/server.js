@@ -1,3 +1,15 @@
+// Polyfill global File object for Node 18 compatibility with undici/fetch
+if (typeof globalThis.File === "undefined") {
+  const { Blob } = require("buffer");
+  globalThis.File = class File extends Blob {
+    constructor(sources, fileName, options = {}) {
+      super(sources, options);
+      this.name = fileName;
+      this.lastModified = options.lastModified || Date.now();
+    }
+  };
+}
+
 const express = require("express");
 const http = require("http");
 const { Server } = require("socket.io");

@@ -15,5 +15,8 @@
     "express": "^5.2.1",
     "socket.io": "^4.8.3",
     "yt-search": "^2.13.1"
+  },
+  "engines": {
+    "node": ">=20.0.0"
   }
 }
