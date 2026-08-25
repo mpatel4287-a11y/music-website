@@ -140,7 +140,7 @@ export default function DashboardView({
     )}&country=${encodeURIComponent(countryParam)}`;
 
     fetch(apiUrl)
-      .then((res) => res.json())
+      .then((res) => (res.ok ? res.json() : { recommendations: [] }))
       .then((data) => {
         if (isMounted) {
           const recs = data.recommendations || [];
@@ -161,7 +161,7 @@ export default function DashboardView({
   const fetchActiveRooms = () => {
     setIsLoadingRooms(true);
     fetch(`${backendUrl}/api/rooms`)
-      .then((res) => res.json())
+      .then((res) => (res.ok ? res.json() : { rooms: [] }))
       .then((data) => {
         setRoomsList(data.rooms || []);
         setIsLoadingRooms(false);

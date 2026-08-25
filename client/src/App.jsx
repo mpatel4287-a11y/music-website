@@ -29,7 +29,8 @@ const getBackendUrl = () => {
       return "http://localhost:5000";
     }
   }
-  return "";
+  // Production fallback to active Railway backend URL
+  return "https://music-website-production.up.railway.app";
 };
 
 const BACKEND_URL = getBackendUrl();
