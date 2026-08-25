@@ -65,7 +65,17 @@ function searchLocalCurated(query) {
   for (const cat in CURATED_SINGLE_SONGS) {
     allCurated.push(...CURATED_SINGLE_SONGS[cat]);
   }
-  const matches = allCurated.filter(
+  
+  // Deduplicate by videoId
+  const uniqueSongsMap = new Map();
+  for (const s of allCurated) {
+    if (!uniqueSongsMap.has(s.videoId)) {
+      uniqueSongsMap.set(s.videoId, s);
+    }
+  }
+  const allSongs = Array.from(uniqueSongsMap.values());
+
+  const matches = allSongs.filter(
     (s) => s.title.toLowerCase().includes(q) || s.artist.toLowerCase().includes(q)
   );
   
@@ -80,24 +90,16 @@ function searchLocalCurated(query) {
     }));
   }
 
-  // Clean fallback match
+  // Return full set of current 2024-2026 trending hit songs if query has no specific keyword match
   return [
-    {
-      videoId: "BddP6PYo2gs",
-      title: `${query}`,
-      artist: "Trending Single Track",
-      thumbnail: "https://img.youtube.com/vi/BddP6PYo2gs/hqdefault.jpg",
-      duration: "3:45",
-      seconds: 225,
-    },
-    {
-      videoId: "eVli-tstM5E",
-      title: "Espresso",
-      artist: "Sabrina Carpenter",
-      thumbnail: "https://img.youtube.com/vi/eVli-tstM5E/hqdefault.jpg",
-      duration: "2:55",
-      seconds: 175,
-    },
+    { videoId: "vA83L5XN694", title: "Tauba Tauba", artist: "Karan Aujla", thumbnail: "https://img.youtube.com/vi/vA83L5XN694/hqdefault.jpg", duration: "3:25", seconds: 205 },
+    { videoId: "eVli-tstM5E", title: "Espresso", artist: "Sabrina Carpenter", thumbnail: "https://img.youtube.com/vi/eVli-tstM5E/hqdefault.jpg", duration: "2:55", seconds: 175 },
+    { videoId: "V9PVRfjEBTI", title: "BIRDS OF A FEATHER", artist: "Billie Eilish", thumbnail: "https://img.youtube.com/vi/V9PVRfjEBTI/hqdefault.jpg", duration: "3:17", seconds: 197 },
+    { videoId: "c183-W1s4h0", title: "Not Like Us", artist: "Kendrick Lamar", thumbnail: "https://img.youtube.com/vi/c183-W1s4h0/hqdefault.jpg", duration: "4:34", seconds: 274 },
+    { videoId: "g6_tK0x_XwQ", title: "Husn", artist: "Anuv Jain", thumbnail: "https://img.youtube.com/vi/g6_tK0x_XwQ/hqdefault.jpg", duration: "3:38", seconds: 218 },
+    { videoId: "BddP6PYo2gs", title: "Kesariya", artist: "Arijit Singh", thumbnail: "https://img.youtube.com/vi/BddP6PYo2gs/hqdefault.jpg", duration: "4:28", seconds: 268 },
+    { videoId: "vK4s7p6vF7c", title: "Softly", artist: "Karan Aujla", thumbnail: "https://img.youtube.com/vi/vK4s7p6vF7c/hqdefault.jpg", duration: "2:35", seconds: 155 },
+    { videoId: "D4hR_jZ1W_M", title: "Heeriye", artist: "Jasleen Royal & Arijit Singh", thumbnail: "https://img.youtube.com/vi/D4hR_jZ1W_M/hqdefault.jpg", duration: "3:14", seconds: 194 },
   ];
 }
 
