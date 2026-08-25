@@ -82,6 +82,13 @@ const CLIENT_FALLBACK_RECOMMENDATIONS = {
 };
 
 
+const getEffectiveBackendUrl = (url) => {
+  if (url && typeof url === "string" && url.startsWith("http")) {
+    return url.replace(/\/$/, "");
+  }
+  return "https://music-website-production.up.railway.app";
+};
+
 export default function DashboardView({
   username,
   avatarColor,
@@ -92,6 +99,7 @@ export default function DashboardView({
   currentRoomId,
   backendUrl,
 }) {
+  const effectiveBackend = getEffectiveBackendUrl(backendUrl);
   const [selectedGenreTab, setSelectedGenreTab] = useState("all");
   const [accessFilter, setAccessFilter] = useState("all"); // 'all' | 'free' | 'protected'
 
@@ -228,7 +236,7 @@ export default function DashboardView({
     fetchActiveRooms();
     const interval = setInterval(fetchActiveRooms, 8000);
     return () => clearInterval(interval);
-  }, [backendUrl]);
+  }, [effectiveBackend]);
 
   const [songSearchResults, setSongSearchResults] = useState([]);
   const [isSearchingSongs, setIsSearchingSongs] = useState(false);
@@ -243,7 +251,7 @@ export default function DashboardView({
 
     setIsSearchingSongs(true);
     const timer = setTimeout(() => {
-      fetch(`${backendUrl}/api/search?q=${encodeURIComponent(searchQuery.trim())}`)
+      fetch(`${effectiveBackend}/api/search?q=${encodeURIComponent(searchQuery.trim())}`)
         .then((res) => (res.ok ? res.json() : { results: [] }))
         .then((data) => {
           setSongSearchResults(data.results || []);
@@ -258,7 +266,7 @@ export default function DashboardView({
     }, 400);
 
     return () => clearTimeout(timer);
-  }, [searchQuery, backendUrl]);
+  }, [searchQuery, effectiveBackend]);
 
   // Filter Active Rooms based on Access & Search Query
   const filteredRooms = roomsList.filter((room) => {
