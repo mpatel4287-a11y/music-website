@@ -748,6 +748,18 @@ const defaultRooms = {
 const rooms = { ...defaultRooms };
 const disconnectTimers = {};
 
+// Helper to ensure default room exists when requested
+function ensureDefaultRoom(cleanRoomId) {
+  if (defaultRooms[cleanRoomId]) {
+    if (!rooms[cleanRoomId]) {
+      rooms[cleanRoomId] = JSON.parse(JSON.stringify(defaultRooms[cleanRoomId]));
+      rooms[cleanRoomId].mutedSocketIds = new Set();
+    }
+    return rooms[cleanRoomId];
+  }
+  return null;
+}
+
 // Helper to sanitize room payload for clients
 function getSanitizedRoomState(room, clientSocketId) {
   if (!room) return null;
@@ -827,6 +839,26 @@ setInterval(() => {
 }, 1000);
 
 io.on("connection", (socket) => {
+  // Pre-flight room existence and passcode check
+  socket.on("validate-room", ({ roomId }, callback) => {
+    const cleanRoomId = (roomId || "").trim().toLowerCase();
+    let room = rooms[cleanRoomId] || ensureDefaultRoom(cleanRoomId);
+    if (!room) {
+      if (callback) callback({ exists: false, message: `Room "${cleanRoomId}" does not exist.` });
+      return;
+    }
+    if (callback) {
+      callback({
+        exists: true,
+        roomId: room.roomId,
+        hasPasscode: Boolean(room.passcode && room.passcode.trim().length > 0),
+        listenersCount: room.users ? room.users.length : 0,
+        trackTitle: room.trackTitle,
+        artistName: room.artistName,
+      });
+    }
+  });
+
   // 1. Create Room
   socket.on("create-room", ({ roomId, passcode, username, avatarColor }, callback) => {
     const cleanRoomId = (roomId || "").trim().toLowerCase();
@@ -837,17 +869,17 @@ io.on("connection", (socket) => {
       return;
     }
 
-    if (rooms[cleanRoomId] && rooms[cleanRoomId].users.length > 0) {
+    if (rooms[cleanRoomId] && rooms[cleanRoomId].users && rooms[cleanRoomId].users.length > 0) {
       if (callback) {
         callback({
           success: false,
-          message: `Room "${cleanRoomId}" already exists. Please join it or choose another name.`,
+          message: `Room "${cleanRoomId}" is already active with listeners. Please join it or choose another name.`,
         });
       }
       return;
     }
 
-    // Initialize fresh room
+    // Initialize fresh room (or overwrite empty room)
     rooms[cleanRoomId] = {
       roomId: cleanRoomId,
       passcode: (passcode || "").trim(),
@@ -909,50 +941,34 @@ io.on("connection", (socket) => {
     }
 
     let room = rooms[cleanRoomId];
-
-    // Auto-create room if it doesn't exist yet (first user is Admin)
     if (!room) {
-      room = {
-        roomId: cleanRoomId,
-        passcode: (passcode || "").trim(),
-        adminSocketId: socket.id,
-        adminUsername: cleanUsername,
-        videoId: "jfKfPfyJRdk",
-        isPlaying: false,
-        currentTime: 0,
-        lastUpdated: Date.now(),
-        trackTitle: "Lofi Chill Beats",
-        artistName: "Lofi Girl",
-        thumbnail: "https://images.unsplash.com/photo-1518609878373-06d740f60d8b?w=500&auto=format&fit=crop&q=60",
-        durationSec: 180,
-        users: [],
-        mutedSocketIds: new Set(),
-        queue: [],
-        requests: [],
-        chatMessages: [
-          {
-            id: `msg_${Date.now()}`,
-            system: true,
-            text: `🎉 Room "${cleanRoomId}" started!`,
-            time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
-          },
-        ],
-      };
-      rooms[cleanRoomId] = room;
-    } else {
-      // Validate Passcode if set
-      if (room.passcode && room.passcode.length > 0) {
-        const inputPass = (passcode || "").trim();
-        if (inputPass !== room.passcode) {
-          if (callback) {
-            callback({
-              success: false,
-              requiresPasscode: true,
-              message: "Incorrect room passcode. Please check and try again.",
-            });
-          }
-          return;
+      room = ensureDefaultRoom(cleanRoomId);
+    }
+
+    // Do NOT auto-create non-existent custom rooms. Return clean error!
+    if (!room) {
+      if (callback) {
+        callback({
+          success: false,
+          roomNotFound: true,
+          message: `Room "${cleanRoomId}" does not exist or has ended.`,
+        });
+      }
+      return;
+    }
+
+    // Validate Passcode if set
+    if (room.passcode && room.passcode.length > 0) {
+      const inputPass = (passcode || "").trim();
+      if (inputPass !== room.passcode) {
+        if (callback) {
+          callback({
+            success: false,
+            requiresPasscode: true,
+            message: "Incorrect room passcode. Please check and try again.",
+          });
         }
+        return;
       }
     }
 
@@ -1499,9 +1515,14 @@ io.on("connection", (socket) => {
         socket.leave(cleanRoomId);
         socket.roomId = null;
 
-        // If room is empty, delete room
+        // If room is empty, delete custom room or reset default room
         if (room.users.length === 0) {
-          delete rooms[cleanRoomId];
+          if (defaultRooms[cleanRoomId]) {
+            rooms[cleanRoomId] = JSON.parse(JSON.stringify(defaultRooms[cleanRoomId]));
+            rooms[cleanRoomId].mutedSocketIds = new Set();
+          } else {
+            delete rooms[cleanRoomId];
+          }
           return;
         }
 
@@ -1557,9 +1578,14 @@ io.on("connection", (socket) => {
               rooms[roomId].mutedSocketIds.delete(socketId);
             }
 
-            // If room is empty, delete room
+            // If room is empty, delete custom room or reset default room
             if (rooms[roomId].users.length === 0) {
-              delete rooms[roomId];
+              if (defaultRooms[roomId]) {
+                rooms[roomId] = JSON.parse(JSON.stringify(defaultRooms[roomId]));
+                rooms[roomId].mutedSocketIds = new Set();
+              } else {
+                delete rooms[roomId];
+              }
               return;
             }
 
