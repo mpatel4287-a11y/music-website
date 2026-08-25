@@ -305,6 +305,36 @@ export default function App() {
     }
   }, [roomState, roomId]);
 
+  // Global User Gesture Audio Activator (Unlocks Autoplay Policy for Listeners on First Click/Touch)
+  useEffect(() => {
+    const unlockAudio = () => {
+      if (playerRef.current) {
+        try {
+          if (!isMuted) {
+            playerRef.current.unMute();
+            playerRef.current.setVolume(volume);
+          }
+          if (roomStateRef.current?.isPlaying) {
+            const state = typeof playerRef.current.getPlayerState === "function" ? playerRef.current.getPlayerState() : -1;
+            if (state !== 1) {
+              playerRef.current.playVideo();
+            }
+          }
+        } catch (e) {}
+      }
+    };
+
+    window.addEventListener("click", unlockAudio, { passive: true });
+    window.addEventListener("touchstart", unlockAudio, { passive: true });
+    window.addEventListener("keydown", unlockAudio, { passive: true });
+
+    return () => {
+      window.removeEventListener("click", unlockAudio);
+      window.removeEventListener("touchstart", unlockAudio);
+      window.removeEventListener("keydown", unlockAudio);
+    };
+  }, [isMuted, volume]);
+
   // 2. Setup Socket Listeners
   useEffect(() => {
     socket.on("connect", () => {
@@ -340,19 +370,23 @@ export default function App() {
       if (playerRef.current) {
         const player = playerRef.current;
         try {
-          const currentUrl = player.getVideoUrl() || "";
-          const localTime = player.getCurrentTime() || 0;
+          const currentUrl = typeof player.getVideoUrl === "function" ? player.getVideoUrl() || "" : "";
+          const localTime = typeof player.getCurrentTime === "function" ? player.getCurrentTime() || 0 : 0;
 
-          if (!currentUrl.includes(state.videoId)) {
+          if (state.videoId && !currentUrl.includes(state.videoId)) {
             player.loadVideoById({
               videoId: state.videoId,
               startSeconds: state.currentTime || 0,
             });
+            player.unMute();
+            player.setVolume(volume);
           } else if (Math.abs(localTime - state.currentTime) > 2.0) {
             player.seekTo(state.currentTime, true);
           }
 
           if (state.isPlaying) {
+            player.unMute();
+            player.setVolume(volume);
             player.playVideo();
           } else {
             player.pauseVideo();
@@ -843,15 +877,19 @@ function performClientSearchFallback(query) {
   // Manual Re-sync for Listeners
   const handleManualResync = useCallback(() => {
     if (playerRef.current && roomState) {
-      playerRef.current.seekTo(roomState.currentTime || 0, true);
-      if (roomState.isPlaying) {
-        playerRef.current.playVideo();
-      } else {
-        playerRef.current.pauseVideo();
-      }
+      try {
+        playerRef.current.unMute();
+        playerRef.current.setVolume(volume);
+        playerRef.current.seekTo(roomState.currentTime || 0, true);
+        if (roomState.isPlaying) {
+          playerRef.current.playVideo();
+        } else {
+          playerRef.current.pauseVideo();
+        }
+      } catch (e) {}
       showToast("🔄 Player re-synchronized with Host!", "success");
     }
-  }, [roomState, showToast]);
+  }, [roomState, volume, showToast]);
 
   // Volume Controls (Local)
   const handleVolumeChange = useCallback((newVol) => {
@@ -1050,13 +1088,13 @@ function performClientSearchFallback(query) {
         style={{ display: "none" }}
       />
 
-      {/* Invisible Musync Audio Engine */}
+      {/* Musync Audio Engine */}
       <div className="hidden-youtube-engine">
         <YouTube
           videoId={roomState?.videoId || "jfKfPfyJRdk"}
           opts={{
-            height: "1",
-            width: "1",
+            height: "200",
+            width: "200",
             playerVars: {
               autoplay: 1,
               controls: 0,
@@ -1068,10 +1106,21 @@ function performClientSearchFallback(query) {
           }}
           onReady={(e) => {
             playerRef.current = e.target;
-            playerRef.current.setVolume(volume);
-            if (roomState?.isPlaying) {
-              try {
+            try {
+              playerRef.current.unMute();
+              playerRef.current.setVolume(volume);
+              if (roomState?.isPlaying) {
                 playerRef.current.playVideo();
+              }
+            } catch (err) {}
+          }}
+          onStateChange={(e) => {
+            if (e.data === 1 && playerRef.current) {
+              try {
+                if (!isMuted) {
+                  playerRef.current.unMute();
+                  playerRef.current.setVolume(volume);
+                }
               } catch (err) {}
             }
           }}

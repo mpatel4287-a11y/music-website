@@ -14,15 +14,17 @@
   position: relative;
 }
 
-/* Hidden Audio Engine Host */
+/* Hidden Audio Engine Host (Positioned within layout viewport to ensure browser unmuted audio playback) */
 .hidden-youtube-engine {
-  position: absolute;
-  top: -9999px;
-  left: -9999px;
-  width: 1px;
-  height: 1px;
-  opacity: 0;
+  position: fixed;
+  bottom: 0;
+  right: 0;
+  width: 200px;
+  height: 200px;
+  opacity: 0.001;
   pointer-events: none;
+  z-index: -999;
+  overflow: hidden;
 }
 
 /* ==========================================================================
