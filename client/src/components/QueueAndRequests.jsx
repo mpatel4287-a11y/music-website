@@ -73,6 +73,28 @@ function QueueAndRequests({
     }
   }, [chatMessages, activeTab]);
 
+  // Auto debounced search as user types inside Room Search Tab
+  useEffect(() => {
+    if (activeTab !== "search") return;
+    
+    if (!searchQuery.trim()) {
+      return;
+    }
+
+    const timer = setTimeout(() => {
+      onSearch(searchQuery.trim());
+    }, 400);
+
+    return () => clearTimeout(timer);
+  }, [searchQuery, activeTab, onSearch]);
+
+  // Initial trending recommendations trigger when search tab opens empty
+  useEffect(() => {
+    if (activeTab === "search" && searchResults.length === 0 && !searchQuery) {
+      onSearch("Trending Songs");
+    }
+  }, [activeTab, searchResults.length, searchQuery, onSearch]);
+
   const handleSearchSubmit = (e) => {
     e.preventDefault();
     if (!searchQuery.trim()) return;

@@ -576,7 +576,11 @@ function performClientSearchFallback(query) {
 
       setIsSearching(true);
       try {
-        const res = await fetch(`${BACKEND_URL}/api/search?q=${encodeURIComponent(query)}`);
+        const activeBackend = BACKEND_URL && BACKEND_URL.startsWith("http")
+          ? BACKEND_URL
+          : "https://music-website-production.up.railway.app";
+
+        const res = await fetch(`${activeBackend}/api/search?q=${encodeURIComponent(query)}`);
         const data = res.ok ? await res.json() : { results: [] };
         const results = data.results && data.results.length > 0
           ? data.results
