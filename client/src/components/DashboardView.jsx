@@ -230,6 +230,36 @@ export default function DashboardView({
     return () => clearInterval(interval);
   }, [backendUrl]);
 
+  const [songSearchResults, setSongSearchResults] = useState([]);
+  const [isSearchingSongs, setIsSearchingSongs] = useState(false);
+
+  // Live YouTube song search on Dashboard search input change
+  useEffect(() => {
+    if (!searchQuery.trim()) {
+      setSongSearchResults([]);
+      setIsSearchingSongs(false);
+      return;
+    }
+
+    setIsSearchingSongs(true);
+    const timer = setTimeout(() => {
+      fetch(`${backendUrl}/api/search?q=${encodeURIComponent(searchQuery.trim())}`)
+        .then((res) => (res.ok ? res.json() : { results: [] }))
+        .then((data) => {
+          setSongSearchResults(data.results || []);
+        })
+        .catch((err) => {
+          console.warn("Dashboard song search error:", err);
+          setSongSearchResults([]);
+        })
+        .finally(() => {
+          setIsSearchingSongs(false);
+        });
+    }, 400);
+
+    return () => clearTimeout(timer);
+  }, [searchQuery, backendUrl]);
+
   // Filter Active Rooms based on Access & Search Query
   const filteredRooms = roomsList.filter((room) => {
     // Access Filter
@@ -307,6 +337,95 @@ export default function DashboardView({
           </div>
         </div>
       </section>
+
+      {/* Global Song & Room Search Bar */}
+      <div className="global-dashboard-search-wrapper" style={{ margin: "16px 0 24px" }}>
+        <div className="room-search-bar" style={{ maxWidth: "700px", margin: "0 auto", padding: "10px 16px", borderRadius: "12px", background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.12)", display: "flex", alignItems: "center", gap: "10px" }}>
+          <Search size={18} className="search-icon" style={{ color: "var(--text-accent, #8b5cf6)", flexShrink: 0 }} />
+          <input
+            type="text"
+            placeholder="Search any song, artist, or live room (e.g. Coldplay, Arijit, Die With A Smile)..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="room-search-input"
+            style={{ width: "100%", background: "transparent", border: "none", outline: "none", color: "#fff", fontSize: "0.95rem" }}
+          />
+          {searchQuery && (
+            <button
+              type="button"
+              className="clear-search-btn"
+              onClick={() => setSearchQuery("")}
+              style={{ background: "none", border: "none", color: "var(--text-muted)", cursor: "pointer", fontSize: "14px" }}
+            >
+              ✕
+            </button>
+          )}
+        </div>
+      </div>
+
+      {/* Live Song Search Results Section */}
+      {searchQuery.trim() && (
+        <section className="dashboard-section" style={{ marginBottom: "32px" }}>
+          <div className="section-header">
+            <div className="section-title-group" style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+              <Search size={20} className="text-accent" />
+              <h2>Live YouTube Songs for "{searchQuery}"</h2>
+            </div>
+          </div>
+
+          {isSearchingSongs ? (
+            <div className="dashboard-loading-placeholder">
+              <RefreshCw size={24} className="spin-slow text-accent" />
+              <span>Searching live YouTube music for "{searchQuery}"...</span>
+            </div>
+          ) : songSearchResults.length > 0 ? (
+            <div className="recommendations-grid">
+              {songSearchResults.map((song) => (
+                <div key={song.videoId} className="song-recommendation-card">
+                  <div className="card-artwork-wrapper">
+                    <img
+                      src={song.thumbnail}
+                      alt={song.title}
+                      className="card-artwork-img"
+                    />
+                    <div className="card-play-overlay">
+                      <button
+                        type="button"
+                        className="card-quick-play-btn"
+                        onClick={() => onHostSongDirect(song)}
+                        title="Host new room with this song"
+                      >
+                        <Play size={18} fill="#fff" />
+                      </button>
+                    </div>
+                    <span className="duration-pill">{song.duration}</span>
+                  </div>
+
+                  <div className="song-card-info">
+                    <h4 className="song-card-title" title={song.title}>
+                      {song.title}
+                    </h4>
+                    <p className="song-card-artist">{song.artist}</p>
+                  </div>
+
+                  <button
+                    type="button"
+                    className="btn-mini-host-song"
+                    onClick={() => onHostSongDirect(song)}
+                  >
+                    <Headphones size={13} />
+                    <span>Host Room</span>
+                  </button>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="empty-rooms-box">
+              <p>No songs found for "{searchQuery}". Try another song or artist name!</p>
+            </div>
+          )}
+        </section>
+      )}
 
       {/* 2. Music Categories & Tracks Shelf */}
       <section className="dashboard-section">
