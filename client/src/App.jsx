@@ -516,6 +516,48 @@ export default function App() {
     [showToast]
   );
 
+const MASTER_SONGS_DATABASE = [
+  { videoId: "vA83L5XN694", title: "Tauba Tauba", artist: "Karan Aujla", duration: "3:25", seconds: 205, thumbnail: "https://img.youtube.com/vi/vA83L5XN694/hqdefault.jpg" },
+  { videoId: "eVli-tstM5E", title: "Espresso", artist: "Sabrina Carpenter", duration: "2:55", seconds: 175, thumbnail: "https://img.youtube.com/vi/eVli-tstM5E/hqdefault.jpg" },
+  { videoId: "V9PVRfjEBTI", title: "BIRDS OF A FEATHER", artist: "Billie Eilish", duration: "3:17", seconds: 197, thumbnail: "https://img.youtube.com/vi/V9PVRfjEBTI/hqdefault.jpg" },
+  { videoId: "c183-W1s4h0", title: "Not Like Us", artist: "Kendrick Lamar", duration: "4:34", seconds: 274, thumbnail: "https://img.youtube.com/vi/c183-W1s4h0/hqdefault.jpg" },
+  { videoId: "g6_tK0x_XwQ", title: "Husn", artist: "Anuv Jain", duration: "3:38", seconds: 218, thumbnail: "https://img.youtube.com/vi/g6_tK0x_XwQ/hqdefault.jpg" },
+  { videoId: "yJg-Y5byMMw", title: "Big Dawgs", artist: "Hanumankind & Kalmi", duration: "3:53", seconds: 233, thumbnail: "https://img.youtube.com/vi/yJg-Y5byMMw/hqdefault.jpg" },
+  { videoId: "BddP6PYo2gs", title: "Kesariya", artist: "Arijit Singh", duration: "4:28", seconds: 268, thumbnail: "https://img.youtube.com/vi/BddP6PYo2gs/hqdefault.jpg" },
+  { videoId: "vK4s7p6vF7c", title: "Softly", artist: "Karan Aujla", duration: "2:35", seconds: 155, thumbnail: "https://img.youtube.com/vi/vK4s7p6vF7c/hqdefault.jpg" },
+  { videoId: "D4hR_jZ1W_M", title: "Heeriye", artist: "Jasleen Royal & Arijit Singh", duration: "3:14", seconds: 194, thumbnail: "https://img.youtube.com/vi/D4hR_jZ1W_M/hqdefault.jpg" },
+  { videoId: "FnT94P8P2z0", title: "Apna Bana Le", artist: "Arijit Singh", duration: "4:21", seconds: 261, thumbnail: "https://img.youtube.com/vi/FnT94P8P2z0/hqdefault.jpg" },
+  { videoId: "g42C__pXl_g", title: "Chaleya", artist: "Arijit Singh & Shilpa Rao", duration: "3:20", seconds: 200, thumbnail: "https://img.youtube.com/vi/g42C__pXl_g/hqdefault.jpg" },
+  { videoId: "3yX_v9N6f7M", title: "Tu Aake Dekhle", artist: "King", duration: "4:40", seconds: 280, thumbnail: "https://img.youtube.com/vi/3yX_v9N6f7M/hqdefault.jpg" },
+  { videoId: "4NRXx6U8ABQ", title: "Blinding Lights", artist: "The Weeknd", duration: "3:20", seconds: 200, thumbnail: "https://img.youtube.com/vi/4NRXx6U8ABQ/hqdefault.jpg" },
+  { videoId: "TUVcZfQe-Kw", title: "Levitating", artist: "Dua Lipa", duration: "3:23", seconds: 203, thumbnail: "https://img.youtube.com/vi/TUVcZfQe-Kw/hqdefault.jpg" },
+  { videoId: "H5v3kku4y6Q", title: "As It Was", artist: "Harry Styles", duration: "2:47", seconds: 167, thumbnail: "https://img.youtube.com/vi/H5v3kku4y6Q/hqdefault.jpg" },
+  { videoId: "ic8j13gRBSQ", title: "Cruel Summer", artist: "Taylor Swift", duration: "2:58", seconds: 178, thumbnail: "https://img.youtube.com/vi/ic8j13gRBSQ/hqdefault.jpg" },
+  { videoId: "RLzC55ai0eo", title: "vampire", artist: "Olivia Rodrigo", duration: "3:39", seconds: 219, thumbnail: "https://img.youtube.com/vi/RLzC55ai0eo/hqdefault.jpg" },
+  { videoId: "jJPMnTXl63E", title: "death bed (coffee for your head)", artist: "Powfu", duration: "2:53", seconds: 173, thumbnail: "https://img.youtube.com/vi/jJPMnTXl63E/hqdefault.jpg" },
+  { videoId: "h_D3VFfhvs4", title: "Lag Ja Gale Se Phir", artist: "Lata Mangeshkar", duration: "4:15", seconds: 255, thumbnail: "https://img.youtube.com/vi/h_D3VFfhvs4/hqdefault.jpg" },
+  { videoId: "h53iJ8W68_4", title: "Pal Pal Dil Ke Pas", artist: "Kishore Kumar", duration: "5:25", seconds: 325, thumbnail: "https://img.youtube.com/vi/h53iJ8W68_4/hqdefault.jpg" },
+  { videoId: "1w7OgIMMRc4", title: "Bohemian Rhapsody", artist: "Queen", duration: "5:55", seconds: 355, thumbnail: "https://img.youtube.com/vi/1w7OgIMMRc4/hqdefault.jpg" },
+  { videoId: "v8oqaSj4R3c", title: "Hotel California", artist: "Eagles", duration: "6:30", seconds: 390, thumbnail: "https://img.youtube.com/vi/v8oqaSj4R3c/hqdefault.jpg" },
+  { videoId: "Zi_XLOBDo_Y", title: "Billie Jean", artist: "Michael Jackson", duration: "4:54", seconds: 294, thumbnail: "https://img.youtube.com/vi/Zi_XLOBDo_Y/hqdefault.jpg" },
+  { videoId: "c2ZAC6v_4", title: "Tujhe Dekha To", artist: "Kumar Sanu", duration: "5:02", seconds: 302, thumbnail: "https://img.youtube.com/vi/c2ZAC6v_4/hqdefault.jpg" },
+  { videoId: "gJliFHAbr6c", title: "Pehla Nasha", artist: "Udit Narayan", duration: "4:48", seconds: 288, thumbnail: "https://img.youtube.com/vi/gJliFHAbr6c/hqdefault.jpg" },
+  { videoId: "hZvFGEE2HaU", title: "Smells Like Teen Spirit", artist: "Nirvana", duration: "4:38", seconds: 278, thumbnail: "https://img.youtube.com/vi/hZvFGEE2HaU/hqdefault.jpg" },
+  { videoId: "4fndeDfaWCg", title: "I Want It That Way", artist: "Backstreet Boys", duration: "3:33", seconds: 213, thumbnail: "https://img.youtube.com/vi/4fndeDfaWCg/hqdefault.jpg" },
+  { videoId: "7maJOI3QMu0", title: "River Flows in You", artist: "Yiruma", duration: "3:08", seconds: 188, thumbnail: "https://img.youtube.com/vi/7maJOI3QMu0/hqdefault.jpg" },
+  { videoId: "kcihcYEOeic", title: "Nuvole Bianche", artist: "Ludovico Einaudi", duration: "5:58", seconds: 358, thumbnail: "https://img.youtube.com/vi/kcihcYEOeic/hqdefault.jpg" },
+];
+
+function performClientSearchFallback(query) {
+  const q = query.trim().toLowerCase();
+  const matches = MASTER_SONGS_DATABASE.filter(
+    (s) => s.title.toLowerCase().includes(q) || s.artist.toLowerCase().includes(q)
+  );
+
+  if (matches.length > 0) return matches;
+  return MASTER_SONGS_DATABASE.slice(0, 10);
+}
+
   // Search music tracks
   const handleSearch = useCallback(
     async (query) => {
@@ -532,18 +574,15 @@ export default function App() {
       try {
         const res = await fetch(`${BACKEND_URL}/api/search?q=${encodeURIComponent(query)}`);
         const data = res.ok ? await res.json() : { results: [] };
-        const results = data.results && data.results.length > 0 ? data.results : [
-          { videoId: "BddP6PYo2gs", title: query, artist: "Popular Music Track", thumbnail: "https://img.youtube.com/vi/BddP6PYo2gs/hqdefault.jpg", duration: "3:30", seconds: 210 },
-          { videoId: "eVli-tstM5E", title: "Espresso", artist: "Sabrina Carpenter", thumbnail: "https://img.youtube.com/vi/eVli-tstM5E/hqdefault.jpg", duration: "2:55", seconds: 175 }
-        ];
+        const results = data.results && data.results.length > 0
+          ? data.results
+          : performClientSearchFallback(query);
+
         searchCacheRef.current[cleanKey] = results;
         setSearchResults(results);
       } catch (err) {
         console.warn("Search network fallback triggered:", err);
-        const fallbackResults = [
-          { videoId: "BddP6PYo2gs", title: query, artist: "Popular Music Track", thumbnail: "https://img.youtube.com/vi/BddP6PYo2gs/hqdefault.jpg", duration: "3:30", seconds: 210 },
-          { videoId: "eVli-tstM5E", title: "Espresso", artist: "Sabrina Carpenter", thumbnail: "https://img.youtube.com/vi/eVli-tstM5E/hqdefault.jpg", duration: "2:55", seconds: 175 }
-        ];
+        const fallbackResults = performClientSearchFallback(query);
         setSearchResults(fallbackResults);
       } finally {
         setIsSearching(false);
