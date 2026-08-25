@@ -550,21 +550,16 @@ const MASTER_SONGS_DATABASE = [
 
 function performClientSearchFallback(query) {
   const q = query.trim().toLowerCase();
-  const matches = MASTER_SONGS_DATABASE.filter(
-    (s) => s.title.toLowerCase().includes(q) || s.artist.toLowerCase().includes(q)
-  );
+  const tokens = q.split(/\s+/).filter(Boolean);
+
+  const matches = MASTER_SONGS_DATABASE.filter((s) => {
+    const title = s.title.toLowerCase();
+    const artist = s.artist.toLowerCase();
+    return tokens.some((token) => title.includes(token) || artist.includes(token));
+  });
 
   if (matches.length > 0) return matches;
-  return [
-    {
-      videoId: "kPa7bsKwL-c",
-      title: `${query}`,
-      artist: "Trending Single Track",
-      duration: "3:45",
-      seconds: 225,
-      thumbnail: "https://img.youtube.com/vi/kPa7bsKwL-c/hqdefault.jpg"
-    }
-  ];
+  return MASTER_SONGS_DATABASE.slice(0, 12);
 }
 
   // Search music tracks

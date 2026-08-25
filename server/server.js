@@ -72,12 +72,15 @@ async function scrapeYouTubeSearch(query) {
     if (!response.ok) return [];
 
     const html = await response.text();
-    const match = html.match(/var ytInitialData = ({.*?});<\/script>/s);
+    const match = html.match(/ytInitialData\s*=\s*({.+?});\s*<\/script>/s) || 
+                  html.match(/ytInitialData\s*=\s*({.+?});/s) ||
+                  html.match(/window\["ytInitialData"\]\s*=\s*({.+?});/s);
     if (!match) return [];
 
     const data = JSON.parse(match[1]);
     const contents =
-      data?.contents?.twoColumnSearchResultsRenderer?.primaryContents?.sectionListRenderer?.contents?.[0]?.itemSectionRenderer?.contents || [];
+      data?.contents?.twoColumnSearchResultsRenderer?.primaryContents?.sectionListRenderer?.contents?.[0]?.itemSectionRenderer?.contents ||
+      data?.contents?.sectionListRenderer?.contents?.[0]?.itemSectionRenderer?.contents || [];
 
     const results = [];
     for (const item of contents) {
@@ -86,7 +89,7 @@ async function scrapeYouTubeSearch(query) {
         const videoId = v.videoId;
         if (!videoId) continue;
 
-        const title = v.title?.runs?.[0]?.text || "Unknown Title";
+        const title = v.title?.runs?.[0]?.text || v.title?.simpleText || "Unknown Title";
         const artist = v.ownerText?.runs?.[0]?.text || "Unknown Artist";
         const thumbnail = v.thumbnail?.thumbnails?.[0]?.url || `https://img.youtube.com/vi/${videoId}/hqdefault.jpg`;
         const duration = v.lengthText?.simpleText || "3:30";
