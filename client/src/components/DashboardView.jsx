@@ -95,6 +95,7 @@ export default function DashboardView({
   onCreateRoom,
   onJoinRoom,
   onHostSongDirect,
+  onReturnToLounge,
   inRoom,
   currentRoomId,
   backendUrl,
@@ -197,7 +198,7 @@ export default function DashboardView({
     }
 
     const countryParam = userLocation?.country || "India";
-    const apiUrl = `${backendUrl}/api/recommendations?genre=${encodeURIComponent(
+    const apiUrl = `${effectiveBackend}/api/recommendations?genre=${encodeURIComponent(
       selectedGenreTab
     )}&country=${encodeURIComponent(countryParam)}`;
 
@@ -218,12 +219,12 @@ export default function DashboardView({
     return () => {
       isMounted = false;
     };
-  }, [selectedGenreTab, userLocation, backendUrl]);
+  }, [selectedGenreTab, userLocation, effectiveBackend]);
 
   // Fetch Active Public/Protected Rooms
   const fetchActiveRooms = () => {
     setIsLoadingRooms(true);
-    fetch(`${backendUrl}/api/rooms`)
+    fetch(`${effectiveBackend}/api/rooms`)
       .then((res) => (res.ok ? res.json() : { rooms: [] }))
       .then((data) => {
         setRoomsList(data.rooms || []);
@@ -326,7 +327,7 @@ export default function DashboardView({
                 type="button"
                 className="btn-accent-glow"
                 onClick={() => {
-                  /* App view switcher handles lounge */
+                  if (onReturnToLounge) onReturnToLounge();
                 }}
               >
                 <Radio size={16} />

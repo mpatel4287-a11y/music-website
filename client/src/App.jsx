@@ -1016,6 +1016,7 @@ function performClientSearchFallback(query) {
             }
           }}
           onHostSongDirect={handleHostSongDirect}
+          onReturnToLounge={() => setViewMode("lounge")}
           inRoom={inRoom}
           currentRoomId={roomId}
           backendUrl={BACKEND_URL}
