@@ -25,9 +25,26 @@ process.on("unhandledRejection", (reason) => {
   console.error("⚠️ Global Unhandled Rejection (prevented crash):", reason?.message || reason);
 });
 
+const path = require("path");
+const fs = require("fs");
+
 const app = express();
 app.use(cors());
 app.use(express.json());
+
+// Serve client dist static files if built
+const clientDistPath = path.join(__dirname, "../client/dist");
+if (fs.existsSync(clientDistPath)) {
+  app.use(express.static(clientDistPath));
+}
+
+app.get("/", (req, res, next) => {
+  const indexPath = path.join(clientDistPath, "index.html");
+  if (fs.existsSync(indexPath)) {
+    return res.sendFile(indexPath);
+  }
+  next();
+});
 
 const server = http.createServer(app);
 const io = new Server(server, {
