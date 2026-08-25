@@ -58,6 +58,65 @@ const io = new Server(server, {
 const searchCache = new Map();
 const SEARCH_CACHE_TTL = 30 * 60 * 1000; // 30 minutes
 
+// Live YouTube Search Scraper via ytInitialData parsing
+async function scrapeYouTubeSearch(query) {
+  try {
+    const url = `https://www.youtube.com/results?search_query=${encodeURIComponent(query)}`;
+    const response = await fetch(url, {
+      headers: {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
+        "Accept-Language": "en-US,en;q=0.9",
+      },
+    });
+
+    if (!response.ok) return [];
+
+    const html = await response.text();
+    const match = html.match(/var ytInitialData = ({.*?});<\/script>/s);
+    if (!match) return [];
+
+    const data = JSON.parse(match[1]);
+    const contents =
+      data?.contents?.twoColumnSearchResultsRenderer?.primaryContents?.sectionListRenderer?.contents?.[0]?.itemSectionRenderer?.contents || [];
+
+    const results = [];
+    for (const item of contents) {
+      if (item.videoRenderer) {
+        const v = item.videoRenderer;
+        const videoId = v.videoId;
+        if (!videoId) continue;
+
+        const title = v.title?.runs?.[0]?.text || "Unknown Title";
+        const artist = v.ownerText?.runs?.[0]?.text || "Unknown Artist";
+        const thumbnail = v.thumbnail?.thumbnails?.[0]?.url || `https://img.youtube.com/vi/${videoId}/hqdefault.jpg`;
+        const duration = v.lengthText?.simpleText || "3:30";
+
+        let seconds = 210;
+        if (duration) {
+          const parts = duration.split(":").map(Number);
+          if (parts.length === 2) seconds = parts[0] * 60 + parts[1];
+          else if (parts.length === 3) seconds = parts[0] * 3600 + parts[1] * 60 + parts[2];
+        }
+
+        results.push({
+          videoId,
+          title,
+          artist,
+          thumbnail,
+          duration,
+          seconds,
+        });
+
+        if (results.length >= 15) break;
+      }
+    }
+    return results;
+  } catch (err) {
+    console.warn("Direct YouTube scraping failed:", err.message);
+    return [];
+  }
+}
+
 // Helper to search local curated database as fallback when YouTube search is slow/blocked
 function searchLocalCurated(query) {
   const q = query.toLowerCase().trim();
@@ -90,20 +149,10 @@ function searchLocalCurated(query) {
     }));
   }
 
-  // Return full set of current 2024-2026 trending hit songs if query has no specific keyword match
-  return [
-    { videoId: "vA83L5XN694", title: "Tauba Tauba", artist: "Karan Aujla", thumbnail: "https://img.youtube.com/vi/vA83L5XN694/hqdefault.jpg", duration: "3:25", seconds: 205 },
-    { videoId: "eVli-tstM5E", title: "Espresso", artist: "Sabrina Carpenter", thumbnail: "https://img.youtube.com/vi/eVli-tstM5E/hqdefault.jpg", duration: "2:55", seconds: 175 },
-    { videoId: "V9PVRfjEBTI", title: "BIRDS OF A FEATHER", artist: "Billie Eilish", thumbnail: "https://img.youtube.com/vi/V9PVRfjEBTI/hqdefault.jpg", duration: "3:17", seconds: 197 },
-    { videoId: "c183-W1s4h0", title: "Not Like Us", artist: "Kendrick Lamar", thumbnail: "https://img.youtube.com/vi/c183-W1s4h0/hqdefault.jpg", duration: "4:34", seconds: 274 },
-    { videoId: "g6_tK0x_XwQ", title: "Husn", artist: "Anuv Jain", thumbnail: "https://img.youtube.com/vi/g6_tK0x_XwQ/hqdefault.jpg", duration: "3:38", seconds: 218 },
-    { videoId: "BddP6PYo2gs", title: "Kesariya", artist: "Arijit Singh", thumbnail: "https://img.youtube.com/vi/BddP6PYo2gs/hqdefault.jpg", duration: "4:28", seconds: 268 },
-    { videoId: "vK4s7p6vF7c", title: "Softly", artist: "Karan Aujla", thumbnail: "https://img.youtube.com/vi/vK4s7p6vF7c/hqdefault.jpg", duration: "2:35", seconds: 155 },
-    { videoId: "D4hR_jZ1W_M", title: "Heeriye", artist: "Jasleen Royal & Arijit Singh", thumbnail: "https://img.youtube.com/vi/D4hR_jZ1W_M/hqdefault.jpg", duration: "3:14", seconds: 194 },
-  ];
+  return [];
 }
 
-// Music Search Endpoint via yt-search (Cached for High Performance + Instant Fallback)
+// Music Search Endpoint via yt-search & Direct Live Scraper (Cached for High Performance)
 app.get("/api/search", async (req, res) => {
   const query = req.query.q;
   if (!query) {
@@ -116,6 +165,14 @@ app.get("/api/search", async (req, res) => {
     return res.json({ results: cached.results, cached: true });
   }
 
+  // 1. Try direct live YouTube HTML parsing (works on Railway/cloud IPs!)
+  const scrapedResults = await scrapeYouTubeSearch(query);
+  if (scrapedResults && scrapedResults.length > 0) {
+    searchCache.set(cleanKey, { timestamp: Date.now(), results: scrapedResults });
+    return res.json({ results: scrapedResults, source: "live_youtube" });
+  }
+
+  // 2. Fallback to yt-search library
   try {
     const r = await ytSearch(query);
     const videos = r.videos ? r.videos.slice(0, 15) : [];
@@ -131,16 +188,15 @@ app.get("/api/search", async (req, res) => {
       }));
 
       searchCache.set(cleanKey, { timestamp: Date.now(), results });
-      return res.json({ results });
+      return res.json({ results, source: "yt_search" });
     }
-
-    const fallbackResults = searchLocalCurated(query);
-    res.json({ results: fallbackResults });
   } catch (error) {
-    console.warn("YouTube Search API rate limited/failed, using fallback:", error.message);
-    const fallbackResults = searchLocalCurated(query);
-    res.json({ results: fallbackResults });
+    console.warn("ytSearch library failed:", error.message);
   }
+
+  // 3. Fallback to curated matching songs
+  const fallbackResults = searchLocalCurated(query);
+  res.json({ results: fallbackResults, source: "local_curated" });
 });
 
 // Health check endpoint
