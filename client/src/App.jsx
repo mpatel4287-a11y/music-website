@@ -20,15 +20,24 @@ import LeaveConfirmModal from "./components/LeaveConfirmModal";
 import "./App.css";
 
 // Dynamic socket backend URL detection
-const BACKEND_URL =
-  import.meta.env.VITE_BACKEND_URL ||
-  (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1"
-    ? "http://localhost:5000"
-    : window.location.origin);
+const getBackendUrl = () => {
+  if (import.meta.env.VITE_BACKEND_URL) {
+    return import.meta.env.VITE_BACKEND_URL.replace(/\/$/, "");
+  }
+  if (typeof window !== "undefined") {
+    if (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1") {
+      return "http://localhost:5000";
+    }
+  }
+  return "";
+};
 
-const socket = io(BACKEND_URL, {
+const BACKEND_URL = getBackendUrl();
+
+const socket = io(BACKEND_URL || undefined, {
   transports: ["websocket", "polling"],
   reconnectionAttempts: 10,
+  autoConnect: true,
 });
 
 export default function App() {
