@@ -105,8 +105,6 @@ app.get("/api/health", (req, res) => {
 });
 
 // JSON User Store Management
-const fs = require("fs");
-const path = require("path");
 const USERS_FILE = path.join(__dirname, "data", "users.json");
 
 function getUsers() {
