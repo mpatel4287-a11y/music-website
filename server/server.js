@@ -760,12 +760,63 @@ function ensureDefaultRoom(cleanRoomId) {
   return null;
 }
 
+// Helper to check if socket or user is the room host/admin (with socket reconnect auto-repair)
+function isUserAdmin(room, socket) {
+  if (!room || !socket) return false;
+
+  // 1. Direct socket ID match
+  if (room.adminSocketId === socket.id) return true;
+
+  // 2. Admin Username match (case-insensitive)
+  if (
+    room.adminUsername &&
+    socket.username &&
+    room.adminUsername.trim().toLowerCase() === socket.username.trim().toLowerCase()
+  ) {
+    room.adminSocketId = socket.id;
+    if (room.users) {
+      const u = room.users.find(
+        (user) =>
+          user.socketId === socket.id ||
+          (user.username && user.username.trim().toLowerCase() === socket.username.trim().toLowerCase())
+      );
+      if (u) {
+        u.isAdmin = true;
+        u.socketId = socket.id;
+      }
+    }
+    return true;
+  }
+
+  // 3. User object isAdmin flag check
+  if (room.users) {
+    const u = room.users.find(
+      (user) =>
+        user.socketId === socket.id ||
+        (user.username && socket.username && user.username.trim().toLowerCase() === socket.username.trim().toLowerCase())
+    );
+    if (u && u.isAdmin) {
+      room.adminSocketId = socket.id;
+      room.adminUsername = u.username;
+      u.socketId = socket.id;
+      return true;
+    }
+  }
+
+  return false;
+}
+
 // Helper to sanitize room payload for clients
 function getSanitizedRoomState(room, clientSocketId) {
   if (!room) return null;
-  const user = room.users.find((u) => u.socketId === clientSocketId);
+  const user = room.users ? room.users.find((u) => u.socketId === clientSocketId) : null;
+  const targetSocket = io.sockets.sockets.get(clientSocketId);
+  const clientUsername = targetSocket && targetSocket.username ? targetSocket.username : (user ? user.username : null);
+
   const isAdmin = Boolean(
-    room.adminSocketId === clientSocketId || (user && user.isAdmin)
+    room.adminSocketId === clientSocketId ||
+    (user && user.isAdmin) ||
+    (room.adminUsername && clientUsername && room.adminUsername.trim().toLowerCase() === clientUsername.trim().toLowerCase())
   );
 
   let liveCurrentTime = room.currentTime || 0;
@@ -793,12 +844,17 @@ function getSanitizedRoomState(room, clientSocketId) {
     isPlaying: room.isPlaying,
     currentTime: liveCurrentTime,
     lastUpdated: room.lastUpdated,
-    users: room.users.map((u) => {
+    users: (room.users || []).map((u) => {
       const isMuted = room.mutedSocketIds ? room.mutedSocketIds.has(u.socketId) : false;
+      const userIsAdmin = Boolean(
+        u.socketId === room.adminSocketId ||
+        u.isAdmin ||
+        (room.adminUsername && u.username && room.adminUsername.trim().toLowerCase() === u.username.trim().toLowerCase())
+      );
       return {
         socketId: u.socketId,
         username: u.username,
-        isAdmin: u.socketId === room.adminSocketId || Boolean(u.isAdmin),
+        isAdmin: userIsAdmin,
         avatarColor: u.avatarColor || "#6366f1",
         isMuted: isMuted,
       };
@@ -989,18 +1045,27 @@ io.on("connection", (socket) => {
 
     // Add / Update / Reconnect user in room
     let existingUserIndex = room.users.findIndex(
-      (u) => u.socketId === socket.id || u.username === cleanUsername
+      (u) =>
+        u.socketId === socket.id ||
+        (u.username && u.username.trim().toLowerCase() === cleanUsername.trim().toLowerCase())
     );
 
     let wasAdmin = false;
     if (existingUserIndex >= 0) {
       const existingUser = room.users[existingUserIndex];
-      wasAdmin = existingUser.isAdmin || room.adminSocketId === existingUser.socketId || room.adminUsername === cleanUsername;
-      
+      wasAdmin =
+        Boolean(existingUser.isAdmin) ||
+        (room.adminUsername && room.adminUsername.trim().toLowerCase() === cleanUsername.trim().toLowerCase()) ||
+        room.adminSocketId === existingUser.socketId;
+
       // Cancel previous disconnect timer if reconnecting
       if (disconnectTimers[existingUser.socketId]) {
         clearTimeout(disconnectTimers[existingUser.socketId]);
         delete disconnectTimers[existingUser.socketId];
+      }
+    } else {
+      if (room.adminUsername && room.adminUsername.trim().toLowerCase() === cleanUsername.trim().toLowerCase()) {
+        wasAdmin = true;
       }
     }
 
@@ -1060,7 +1125,7 @@ io.on("connection", (socket) => {
     if (!room) return;
 
     // Strict Admin authorization check for playback control if more than 1 user
-    if (room.users.length > 1 && socket.id !== room.adminSocketId) {
+    if (room.users.length > 1 && !isUserAdmin(room, socket)) {
       socket.emit("notification", {
         type: "warning",
         message: "Only the Room Host can control playback.",
@@ -1106,7 +1171,7 @@ io.on("connection", (socket) => {
   socket.on("sync-time", ({ roomId, currentTime }) => {
     const room = rooms[roomId];
     if (!room) return;
-    if (socket.id === room.adminSocketId && typeof currentTime === "number" && currentTime >= 0) {
+    if (isUserAdmin(room, socket) && typeof currentTime === "number" && currentTime >= 0) {
       room.currentTime = currentTime;
       room.lastUpdated = Date.now();
     }
@@ -1148,7 +1213,7 @@ io.on("connection", (socket) => {
     const room = rooms[roomId];
     if (!room) return;
 
-    if (socket.id !== room.adminSocketId) {
+    if (!isUserAdmin(room, socket)) {
       socket.emit("notification", {
         type: "error",
         message: "Only the Room Host can approve song requests.",
@@ -1201,7 +1266,7 @@ io.on("connection", (socket) => {
     const room = rooms[roomId];
     if (!room) return;
 
-    if (socket.id !== room.adminSocketId) {
+    if (!isUserAdmin(room, socket)) {
       socket.emit("notification", {
         type: "error",
         message: "Only the Room Host can manage song requests.",
@@ -1242,7 +1307,7 @@ io.on("connection", (socket) => {
     const room = rooms[roomId];
     if (!room) return;
 
-    if (socket.id !== room.adminSocketId) {
+    if (!isUserAdmin(room, socket)) {
       socket.emit("notification", {
         type: "error",
         message: "Only the Room Host can remove items from queue.",
@@ -1259,7 +1324,7 @@ io.on("connection", (socket) => {
     const room = rooms[roomId];
     if (!room) return;
 
-    if (socket.id !== room.adminSocketId) {
+    if (!isUserAdmin(room, socket)) {
       socket.emit("notification", {
         type: "warning",
         message: "Only the Room Host can skip tracks.",
@@ -1304,7 +1369,7 @@ io.on("connection", (socket) => {
   socket.on("reorder-queue", ({ roomId, newQueue }) => {
     const room = rooms[roomId];
     if (!room) return;
-    if (socket.id !== room.adminSocketId) return;
+    if (!isUserAdmin(room, socket)) return;
 
     room.queue = newQueue || [];
     broadcastRoomSync(roomId);
@@ -1357,7 +1422,7 @@ io.on("connection", (socket) => {
     const room = rooms[roomId];
     if (!room) return;
 
-    if (socket.id !== room.adminSocketId) {
+    if (!isUserAdmin(room, socket)) {
       socket.emit("notification", {
         type: "error",
         message: "Only the Room Host can remove participants.",
@@ -1416,7 +1481,7 @@ io.on("connection", (socket) => {
     const room = rooms[roomId];
     if (!room) return;
 
-    if (socket.id !== room.adminSocketId) {
+    if (!isUserAdmin(room, socket)) {
       socket.emit("notification", {
         type: "error",
         message: "Only the Room Host can transfer room ownership.",
@@ -1458,7 +1523,7 @@ io.on("connection", (socket) => {
     const room = rooms[roomId];
     if (!room) return;
 
-    if (socket.id !== room.adminSocketId) {
+    if (!isUserAdmin(room, socket)) {
       socket.emit("notification", {
         type: "error",
         message: "Only the Room Host can mute participants.",
