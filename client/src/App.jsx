@@ -86,26 +86,27 @@ export default function App() {
   // Chat State (Real-time dedicated state for 0ms ultra-fast messaging)
   const [chatMessages, setChatMessages] = useState([]);
 
-  // Mobile Navigation State
+  // Mobile Navigation & Sidebar Tab State
   const [activeMobileTab, setActiveMobileTab] = useState("player");
+  const [sidebarTab, setSidebarTab] = useState("search");
   const [hasUnreadMobileChat, setHasUnreadMobileChat] = useState(false);
   const prevMobileChatCountRef = useRef(chatMessages.length);
 
   useEffect(() => {
     if (chatMessages.length > prevMobileChatCountRef.current) {
       const lastMsg = chatMessages[chatMessages.length - 1];
-      if (activeMobileTab !== "sidebar" && lastMsg && lastMsg.username !== username && !lastMsg.system) {
+      if ((activeMobileTab !== "sidebar" || sidebarTab !== "chat") && lastMsg && lastMsg.username !== username && !lastMsg.system) {
         setHasUnreadMobileChat(true);
       }
     }
     prevMobileChatCountRef.current = chatMessages.length;
-  }, [chatMessages, activeMobileTab, username]);
+  }, [chatMessages, activeMobileTab, sidebarTab, username]);
 
   useEffect(() => {
-    if (activeMobileTab === "sidebar") {
+    if (activeMobileTab === "sidebar" && sidebarTab === "chat") {
       setHasUnreadMobileChat(false);
     }
-  }, [activeMobileTab]);
+  }, [activeMobileTab, sidebarTab]);
 
   // Modals, Overlays & Notifications
   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
@@ -1278,6 +1279,8 @@ function performClientSearchFallback(query) {
               onKickUser={handleKickUser}
               onTransferHost={handleTransferHost}
               onToggleMuteUser={handleToggleMuteUser}
+              activeTabProp={sidebarTab}
+              onTabChangeProp={setSidebarTab}
             />
           </section>
         </main>
@@ -1305,7 +1308,13 @@ function performClientSearchFallback(query) {
       {inRoom && viewMode === "lounge" && (
         <MobileNav
           activeTab={activeMobileTab}
-          onTabChange={setActiveMobileTab}
+          sidebarTab={sidebarTab}
+          onTabChange={(mainTab, subTab) => {
+            setActiveMobileTab(mainTab);
+            if (subTab) {
+              setSidebarTab(subTab);
+            }
+          }}
           isPlaying={Boolean(roomState?.isPlaying)}
           requestsCount={roomState?.requests?.length || 0}
           hasUnreadChat={hasUnreadMobileChat}

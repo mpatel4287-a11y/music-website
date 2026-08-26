@@ -58,8 +58,19 @@ function QueueAndRequests({
   onKickUser,
   onTransferHost,
   onToggleMuteUser,
+  activeTabProp,
+  onTabChangeProp,
 }) {
-  const [activeTab, setActiveTab] = useState("search"); // 'search' | 'queue' | 'requests' | 'chat' | 'participants'
+  const [activeTabState, setActiveTabState] = useState("search"); // 'search' | 'queue' | 'requests' | 'chat' | 'participants'
+  const activeTab = activeTabProp || activeTabState;
+
+  const setActiveTab = (tab) => {
+    setActiveTabState(tab);
+    if (onTabChangeProp) {
+      onTabChangeProp(tab);
+    }
+  };
+
   const [searchQuery, setSearchQuery] = useState("");
   const [chatInput, setChatInput] = useState("");
   const [confirmKickUser, setConfirmKickUser] = useState(null);

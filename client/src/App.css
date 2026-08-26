@@ -964,6 +964,11 @@
   position: relative;
 }
 
+.studio-tab-btn *,
+.mobile-nav-btn * {
+  pointer-events: none;
+}
+
 .studio-tab-btn:hover {
   color: var(--text-main);
   background: rgba(255, 255, 255, 0.05);
