@@ -984,6 +984,38 @@
   border-radius: 9999px;
 }
 
+.tab-icon-wrap {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.unread-red-dot {
+  position: absolute;
+  top: -3px;
+  right: -5px;
+  width: 8px;
+  height: 8px;
+  background-color: #ef4444;
+  border-radius: 50%;
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  box-shadow: 0 0 8px #ef4444;
+  animation: pulse-red-dot 1.5s infinite ease-in-out;
+  pointer-events: none;
+}
+
+@keyframes pulse-red-dot {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(1.3);
+    opacity: 0.8;
+  }
+}
+
 .tab-count-badge.pulse-badge {
   background: var(--danger);
   animation: pulse-dot 1.5s infinite;

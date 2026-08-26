@@ -88,6 +88,24 @@ export default function App() {
 
   // Mobile Navigation State
   const [activeMobileTab, setActiveMobileTab] = useState("player");
+  const [hasUnreadMobileChat, setHasUnreadMobileChat] = useState(false);
+  const prevMobileChatCountRef = useRef(chatMessages.length);
+
+  useEffect(() => {
+    if (chatMessages.length > prevMobileChatCountRef.current) {
+      const lastMsg = chatMessages[chatMessages.length - 1];
+      if (activeMobileTab !== "sidebar" && lastMsg && lastMsg.username !== username && !lastMsg.system) {
+        setHasUnreadMobileChat(true);
+      }
+    }
+    prevMobileChatCountRef.current = chatMessages.length;
+  }, [chatMessages, activeMobileTab, username]);
+
+  useEffect(() => {
+    if (activeMobileTab === "sidebar") {
+      setHasUnreadMobileChat(false);
+    }
+  }, [activeMobileTab]);
 
   // Modals, Overlays & Notifications
   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
@@ -1290,6 +1308,7 @@ function performClientSearchFallback(query) {
           onTabChange={setActiveMobileTab}
           isPlaying={Boolean(roomState?.isPlaying)}
           requestsCount={roomState?.requests?.length || 0}
+          hasUnreadChat={hasUnreadMobileChat}
           onLeaveRoom={handleLeaveRoom}
         />
       )}

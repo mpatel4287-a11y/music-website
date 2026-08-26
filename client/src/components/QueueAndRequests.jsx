@@ -64,7 +64,8 @@ function QueueAndRequests({
   const [chatInput, setChatInput] = useState("");
   const [confirmKickUser, setConfirmKickUser] = useState(null);
   const [confirmTransferUser, setConfirmTransferUser] = useState(null);
-  const chatEndRef = useRef(null);
+  const [hasUnreadChat, setHasUnreadChat] = useState(false);
+  const prevChatCountRef = useRef(chatMessages.length);
 
   // Auto-scroll chat to bottom
   useEffect(() => {
@@ -72,6 +73,23 @@ function QueueAndRequests({
       chatEndRef.current.scrollIntoView({ behavior: "smooth" });
     }
   }, [chatMessages, activeTab]);
+
+  // Unread chat red dot notification trigger
+  useEffect(() => {
+    if (chatMessages.length > prevChatCountRef.current) {
+      const lastMsg = chatMessages[chatMessages.length - 1];
+      if (activeTab !== "chat" && lastMsg && lastMsg.username !== username && !lastMsg.system) {
+        setHasUnreadChat(true);
+      }
+    }
+    prevChatCountRef.current = chatMessages.length;
+  }, [chatMessages, activeTab, username]);
+
+  useEffect(() => {
+    if (activeTab === "chat") {
+      setHasUnreadChat(false);
+    }
+  }, [activeTab]);
 
   // Auto debounced search as user types inside Room Search Tab
   useEffect(() => {
@@ -152,9 +170,16 @@ function QueueAndRequests({
         <button
           type="button"
           className={`studio-tab-btn ${activeTab === "chat" ? "active" : ""}`}
-          onClick={() => setActiveTab("chat")}
+          onClick={() => {
+            setActiveTab("chat");
+            setHasUnreadChat(false);
+          }}
+          title="Room Chat"
         >
-          <MessageSquare size={14} />
+          <div className="tab-icon-wrap">
+            <MessageSquare size={14} />
+            {hasUnreadChat && <span className="unread-red-dot" title="New message received"></span>}
+          </div>
           <span>Chat</span>
           {chatMessages.length > 0 && (
             <span className="tab-count-badge subtle">{chatMessages.length}</span>
@@ -481,27 +506,9 @@ function QueueAndRequests({
           </div>
         )}
 
-        {/* ================= 4. LIVE CHAT & REACTIONS TAB ================= */}
+        {/* ================= 4. LIVE CHAT TAB ================= */}
         {activeTab === "chat" && (
           <div className="tab-pane chat-pane">
-            {/* Quick Floating Reaction Launcher */}
-            <div className="reaction-launcher-bar">
-              <span className="react-label">React:</span>
-              <div className="emoji-button-row">
-                {REACTION_EMOJIS.map((emoji) => (
-                  <button
-                    key={emoji}
-                    type="button"
-                    className="emoji-burst-btn"
-                    onClick={() => onSendReaction(emoji)}
-                    title={`Send ${emoji} reaction to room`}
-                  >
-                    {emoji}
-                  </button>
-                ))}
-              </div>
-            </div>
-
             {/* Chat Messages Stream */}
             <div className="chat-messages-container">
               {chatMessages.length === 0 ? (

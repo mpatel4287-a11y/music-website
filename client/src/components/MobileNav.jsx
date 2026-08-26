@@ -1,7 +1,7 @@
 import React, { memo } from "react";
 import { Disc3, AlignLeft, MessageSquare, LogOut } from "lucide-react";
 
-function MobileNav({ activeTab, onTabChange, isPlaying, requestsCount = 0, onLeaveRoom }) {
+function MobileNav({ activeTab, onTabChange, isPlaying, requestsCount = 0, hasUnreadChat = false, onLeaveRoom }) {
   return (
     <nav className="mobile-bottom-nav">
       {/* Player Tab */}
@@ -40,9 +40,11 @@ function MobileNav({ activeTab, onTabChange, isPlaying, requestsCount = 0, onLea
       >
         <div className="nav-icon-wrapper">
           <MessageSquare size={20} />
-          {requestsCount > 0 && (
+          {hasUnreadChat ? (
+            <span className="unread-red-dot"></span>
+          ) : requestsCount > 0 ? (
             <span className="nav-badge-pill">{requestsCount}</span>
-          )}
+          ) : null}
         </div>
         <span className="nav-label">Lounge</span>
       </button>
