@@ -1,7 +1,7 @@
 import React, { memo } from "react";
 import { Disc3, AlignLeft, MessageSquare, LogOut } from "lucide-react";
 
-function MobileNav({ activeTab, sidebarTab = "search", onTabChange, isPlaying, requestsCount = 0, hasUnreadChat = false, onLeaveRoom }) {
+function MobileNav({ activeTab, onTabChange, isPlaying, requestsCount = 0, hasUnreadChat = false, onLeaveRoom }) {
   return (
     <nav className="mobile-bottom-nav">
       {/* Player Tab */}
@@ -31,18 +31,22 @@ function MobileNav({ activeTab, sidebarTab = "search", onTabChange, isPlaying, r
         <span className="nav-label">Lyrics</span>
       </button>
 
-      {/* Direct Room Chat Tab */}
+      {/* Queue & Chat Studio Lounge Tab */}
       <button
         type="button"
-        className={`mobile-nav-btn ${activeTab === "sidebar" && sidebarTab === "chat" ? "active" : ""}`}
-        onClick={() => onTabChange("sidebar", "chat")}
-        title="Room Chat Stream"
+        className={`mobile-nav-btn ${activeTab === "sidebar" ? "active" : ""}`}
+        onClick={() => onTabChange("sidebar")}
+        title="Queue, Requests & Chat"
       >
         <div className="nav-icon-wrapper">
           <MessageSquare size={20} />
-          {hasUnreadChat && <span className="unread-red-dot" title="New message"></span>}
+          {hasUnreadChat ? (
+            <span className="unread-red-dot" title="New message received"></span>
+          ) : requestsCount > 0 ? (
+            <span className="nav-badge-pill">{requestsCount}</span>
+          ) : null}
         </div>
-        <span className="nav-label">Chat</span>
+        <span className="nav-label">Lounge</span>
       </button>
 
       {/* Exit Room Action Button (Triggers LeaveConfirmModal) */}

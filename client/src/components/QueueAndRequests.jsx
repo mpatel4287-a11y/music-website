@@ -58,25 +58,15 @@ function QueueAndRequests({
   onKickUser,
   onTransferHost,
   onToggleMuteUser,
-  activeTabProp,
-  onTabChangeProp,
 }) {
-  const [activeTabState, setActiveTabState] = useState("search"); // 'search' | 'queue' | 'requests' | 'chat' | 'participants'
-  const activeTab = activeTabProp || activeTabState;
-
-  const setActiveTab = (tab) => {
-    setActiveTabState(tab);
-    if (onTabChangeProp) {
-      onTabChangeProp(tab);
-    }
-  };
-
+  const [activeTab, setActiveTab] = useState("search"); // 'search' | 'queue' | 'requests' | 'chat' | 'participants'
   const [searchQuery, setSearchQuery] = useState("");
   const [chatInput, setChatInput] = useState("");
   const [confirmKickUser, setConfirmKickUser] = useState(null);
   const [confirmTransferUser, setConfirmTransferUser] = useState(null);
   const [hasUnreadChat, setHasUnreadChat] = useState(false);
   const prevChatCountRef = useRef(chatMessages.length);
+  const chatEndRef = useRef(null);
 
   // Auto-scroll chat to bottom
   useEffect(() => {
