@@ -20,6 +20,7 @@ import {
   VolumeX,
   Volume2,
   Radio,
+  Reply,
 } from "lucide-react";
 
 const QUICK_SEARCH_PROMPTS = [
@@ -65,8 +66,10 @@ function QueueAndRequests({
   const [confirmKickUser, setConfirmKickUser] = useState(null);
   const [confirmTransferUser, setConfirmTransferUser] = useState(null);
   const [hasUnreadChat, setHasUnreadChat] = useState(false);
+  const [replyingTo, setReplyingTo] = useState(null);
   const prevChatCountRef = useRef(chatMessages.length);
   const chatEndRef = useRef(null);
+  const chatInputRef = useRef(null);
 
   // Auto-scroll chat to bottom
   useEffect(() => {
@@ -125,12 +128,25 @@ function QueueAndRequests({
     onSearch(term);
   };
 
+  const handleStartReply = (msg) => {
+    setReplyingTo({
+      id: msg.id,
+      username: msg.username,
+      text: msg.text,
+    });
+    if (chatInputRef.current) {
+      chatInputRef.current.focus();
+    }
+  };
+
   const handleChatSubmit = (e) => {
     e.preventDefault();
     if (!chatInput.trim() || isMuted) return;
     const textToSend = chatInput.trim();
+    const replyData = replyingTo ? { username: replyingTo.username, text: replyingTo.text } : null;
     setChatInput(""); // Clear immediately for instant perceived response
-    onSendChat(textToSend);
+    setReplyingTo(null);
+    onSendChat(textToSend, replyData);
   };
 
   return (
@@ -510,52 +526,87 @@ function QueueAndRequests({
         {/* ================= 4. LIVE CHAT TAB ================= */}
         {activeTab === "chat" && (
           <div className="tab-pane chat-pane">
-            {/* Chat Messages Stream */}
+            {/* Chat Messages Stream (Exclusively User Messages) */}
             <div className="chat-messages-container">
-              {chatMessages.length === 0 ? (
+              {chatMessages.filter((msg) => !msg.system).length === 0 ? (
                 <div className="tab-empty-state">
                   <MessageSquare size={36} className="text-dim" />
                   <p className="state-title">Room Chat</p>
                   <span className="state-subtitle">Say hi to everyone listening!</span>
                 </div>
               ) : (
-                chatMessages.map((msg) => {
-                  if (msg.system) {
+                chatMessages
+                  .filter((msg) => !msg.system)
+                  .map((msg) => {
+                    const isMe = msg.username === username;
                     return (
-                      <div key={msg.id} className="system-chat-message">
-                        <span>{msg.text}</span>
-                        <span className="chat-time">{msg.time}</span>
+                      <div
+                        key={msg.id}
+                        className={`chat-bubble-row ${isMe ? "mine" : "theirs"}`}
+                      >
+                        {!isMe && (
+                          <div
+                            className="chat-avatar-circle"
+                            style={{ backgroundColor: msg.avatarColor || "#8b5cf6" }}
+                          >
+                            {msg.username.charAt(0).toUpperCase()}
+                          </div>
+                        )}
+                        <div className="chat-bubble-content">
+                          <div className="chat-sender-header">
+                            {!isMe && <span className="chat-sender">{msg.username}</span>}
+                            <button
+                              type="button"
+                              className="chat-reply-action-btn"
+                              onClick={() => handleStartReply(msg)}
+                              title={`Reply to @${msg.username}`}
+                            >
+                              <Reply size={11} />
+                              <span>Reply</span>
+                            </button>
+                          </div>
+                          <div className="chat-bubble">
+                            {msg.replyTo && (
+                              <div className="chat-reply-quoted-box">
+                                <span className="quoted-author">@{msg.replyTo.username}</span>
+                                <p className="quoted-text">"{msg.replyTo.text}"</p>
+                              </div>
+                            )}
+                            <p>{msg.text}</p>
+                          </div>
+                          <span className="chat-time">{msg.time}</span>
+                        </div>
                       </div>
                     );
-                  }
-
-                  const isMe = msg.username === username;
-                  return (
-                    <div
-                      key={msg.id}
-                      className={`chat-bubble-row ${isMe ? "mine" : "theirs"}`}
-                    >
-                      {!isMe && (
-                        <div
-                          className="chat-avatar-circle"
-                          style={{ backgroundColor: msg.avatarColor || "#8b5cf6" }}
-                        >
-                          {msg.username.charAt(0).toUpperCase()}
-                        </div>
-                      )}
-                      <div className="chat-bubble-content">
-                        {!isMe && <span className="chat-sender">{msg.username}</span>}
-                        <div className="chat-bubble">
-                          <p>{msg.text}</p>
-                        </div>
-                        <span className="chat-time">{msg.time}</span>
-                      </div>
-                    </div>
-                  );
-                })
+                  })
               )}
               <div ref={chatEndRef} />
             </div>
+
+            {/* Replying Preview Banner */}
+            {replyingTo && (
+              <div className="reply-preview-banner">
+                <div className="reply-preview-content">
+                  <Reply size={13} className="text-accent" />
+                  <span>
+                    Replying to <strong>@{replyingTo.username}</strong>:{" "}
+                    <em>
+                      "{replyingTo.text.length > 35
+                        ? replyingTo.text.substring(0, 35) + "..."
+                        : replyingTo.text}"
+                    </em>
+                  </span>
+                </div>
+                <button
+                  type="button"
+                  className="cancel-reply-btn"
+                  onClick={() => setReplyingTo(null)}
+                  title="Cancel reply"
+                >
+                  <X size={14} />
+                </button>
+              </div>
+            )}
 
             {/* Mute Alert or Chat Input */}
             {isMuted ? (
@@ -566,9 +617,14 @@ function QueueAndRequests({
             ) : (
               <form onSubmit={handleChatSubmit} className="chat-input-form">
                 <input
+                  ref={chatInputRef}
                   type="text"
                   className="chat-input-field"
-                  placeholder="Type a message..."
+                  placeholder={
+                    replyingTo
+                      ? `Replying to @${replyingTo.username}...`
+                      : "Type a message..."
+                  }
                   value={chatInput}
                   onChange={(e) => setChatInput(e.target.value)}
                   maxLength={200}

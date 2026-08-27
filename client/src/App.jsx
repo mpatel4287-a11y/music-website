@@ -936,7 +936,7 @@ function performClientSearchFallback(query) {
 
   // Fast Instant Chat (Optimistic 0ms Local Delivery + Background Socket Broadcast)
   const handleSendChat = useCallback(
-    (text) => {
+    (text, replyTo = null) => {
       if (!text || !text.trim()) return;
       const optimisticMsg = {
         id: `msg_opt_${Date.now()}_${Math.random().toString(36).substr(2, 4)}`,
@@ -944,6 +944,7 @@ function performClientSearchFallback(query) {
         avatarColor,
         text: text.trim(),
         time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+        replyTo: replyTo && replyTo.username && replyTo.text ? { username: replyTo.username, text: replyTo.text } : null,
         optimistic: true,
       };
 
@@ -956,6 +957,7 @@ function performClientSearchFallback(query) {
         text: text.trim(),
         username,
         avatarColor,
+        replyTo: replyTo && replyTo.username && replyTo.text ? { username: replyTo.username, text: replyTo.text } : null,
       });
     },
     [roomId, username, avatarColor]

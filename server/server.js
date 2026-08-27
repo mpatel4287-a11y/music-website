@@ -1376,7 +1376,7 @@ io.on("connection", (socket) => {
   });
 
   // 11. Send Chat Message (Ultra-Fast Immediate Broadcast)
-  socket.on("send-chat", ({ roomId, text, username, avatarColor }) => {
+  socket.on("send-chat", ({ roomId, text, username, avatarColor, replyTo }) => {
     const room = rooms[roomId];
     if (!room || !text || !text.trim()) return;
 
@@ -1395,6 +1395,7 @@ io.on("connection", (socket) => {
       avatarColor: avatarColor || "#6366f1",
       text: text.trim(),
       time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+      replyTo: replyTo && replyTo.username && replyTo.text ? { username: replyTo.username, text: replyTo.text } : null,
     };
 
     room.chatMessages.push(chatItem);
