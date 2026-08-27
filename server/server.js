@@ -760,44 +760,66 @@ function ensureDefaultRoom(cleanRoomId) {
   return null;
 }
 
-// Helper to check if socket or user is the room host/admin (with socket reconnect auto-repair)
+// Helper to check if socket or user is the room host/admin or co-host (with socket reconnect auto-repair)
 function isUserAdmin(room, socket) {
   if (!room || !socket) return false;
 
   // 1. Direct socket ID match
   if (room.adminSocketId === socket.id) return true;
 
-  // 2. Admin Username match (case-insensitive)
+  const sockName = socket.username ? socket.username.trim().toLowerCase() : "";
+
+  // 2. Main Admin Username match (case-insensitive)
   if (
     room.adminUsername &&
-    socket.username &&
-    room.adminUsername.trim().toLowerCase() === socket.username.trim().toLowerCase()
+    sockName &&
+    room.adminUsername.trim().toLowerCase() === sockName
   ) {
     room.adminSocketId = socket.id;
     if (room.users) {
       const u = room.users.find(
         (user) =>
           user.socketId === socket.id ||
-          (user.username && user.username.trim().toLowerCase() === socket.username.trim().toLowerCase())
+          (user.username && user.username.trim().toLowerCase() === sockName)
       );
       if (u) {
         u.isAdmin = true;
+        u.isMainHost = true;
         u.socketId = socket.id;
       }
     }
     return true;
   }
 
-  // 3. User object isAdmin flag check
+  // 3. Co-Host Check (case-insensitive)
+  if (room.coHostUsernames && sockName) {
+    for (const coHost of room.coHostUsernames) {
+      if (coHost.trim().toLowerCase() === sockName) {
+        if (room.users) {
+          const u = room.users.find(
+            (user) =>
+              user.socketId === socket.id ||
+              (user.username && user.username.trim().toLowerCase() === sockName)
+          );
+          if (u) {
+            u.isCoHost = true;
+            u.isAdmin = true;
+            u.socketId = socket.id;
+          }
+        }
+        return true;
+      }
+    }
+  }
+
+  // 4. User object isAdmin or isCoHost flag check
   if (room.users) {
     const u = room.users.find(
       (user) =>
         user.socketId === socket.id ||
-        (user.username && socket.username && user.username.trim().toLowerCase() === socket.username.trim().toLowerCase())
+        (user.username && sockName && user.username.trim().toLowerCase() === sockName)
     );
-    if (u && u.isAdmin) {
-      room.adminSocketId = socket.id;
-      room.adminUsername = u.username;
+    if (u && (u.isAdmin || u.isCoHost)) {
       u.socketId = socket.id;
       return true;
     }
@@ -812,12 +834,25 @@ function getSanitizedRoomState(room, clientSocketId) {
   const user = room.users ? room.users.find((u) => u.socketId === clientSocketId) : null;
   const targetSocket = io.sockets.sockets.get(clientSocketId);
   const clientUsername = targetSocket && targetSocket.username ? targetSocket.username : (user ? user.username : null);
+  const cleanClientUser = clientUsername ? clientUsername.trim().toLowerCase() : "";
 
-  const isAdmin = Boolean(
+  const isMainHost = Boolean(
     room.adminSocketId === clientSocketId ||
-    (user && user.isAdmin) ||
-    (room.adminUsername && clientUsername && room.adminUsername.trim().toLowerCase() === clientUsername.trim().toLowerCase())
+    (user && user.isMainHost) ||
+    (room.adminUsername && cleanClientUser && room.adminUsername.trim().toLowerCase() === cleanClientUser)
   );
+
+  let isCoHost = false;
+  if (room.coHostUsernames && cleanClientUser) {
+    for (const coHost of room.coHostUsernames) {
+      if (coHost.trim().toLowerCase() === cleanClientUser) {
+        isCoHost = true;
+        break;
+      }
+    }
+  }
+
+  const isAdmin = isMainHost || isCoHost || Boolean(user && user.isAdmin);
 
   let liveCurrentTime = room.currentTime || 0;
   if (room.isPlaying && room.lastUpdated) {
@@ -836,6 +871,8 @@ function getSanitizedRoomState(room, clientSocketId) {
     adminSocketId: room.adminSocketId,
     adminUsername: room.adminUsername,
     isCurrentClientAdmin: isAdmin,
+    isCurrentClientMainHost: isMainHost,
+    isCurrentClientCoHost: isCoHost,
     videoId: room.videoId,
     trackTitle: room.trackTitle,
     artistName: room.artistName,
@@ -846,14 +883,26 @@ function getSanitizedRoomState(room, clientSocketId) {
     lastUpdated: room.lastUpdated,
     users: (room.users || []).map((u) => {
       const isMuted = room.mutedSocketIds ? room.mutedSocketIds.has(u.socketId) : false;
-      const userIsAdmin = Boolean(
+      const uName = u.username ? u.username.trim().toLowerCase() : "";
+      const userIsMainHost = Boolean(
         u.socketId === room.adminSocketId ||
-        u.isAdmin ||
-        (room.adminUsername && u.username && room.adminUsername.trim().toLowerCase() === u.username.trim().toLowerCase())
+        (room.adminUsername && uName && room.adminUsername.trim().toLowerCase() === uName)
       );
+      let userIsCoHost = false;
+      if (room.coHostUsernames && uName) {
+        for (const coHost of room.coHostUsernames) {
+          if (coHost.trim().toLowerCase() === uName) {
+            userIsCoHost = true;
+            break;
+          }
+        }
+      }
+      const userIsAdmin = userIsMainHost || userIsCoHost || Boolean(u.isAdmin);
       return {
         socketId: u.socketId,
         username: u.username,
+        isMainHost: userIsMainHost,
+        isCoHost: userIsCoHost,
         isAdmin: userIsAdmin,
         avatarColor: u.avatarColor || "#6366f1",
         isMuted: isMuted,
@@ -1376,9 +1425,9 @@ io.on("connection", (socket) => {
   });
 
   // 11. Send Chat Message (Ultra-Fast Immediate Broadcast)
-  socket.on("send-chat", ({ roomId, text, username, avatarColor, replyTo }) => {
+  socket.on("send-chat", ({ roomId, text, gifUrl, username, avatarColor, replyTo }) => {
     const room = rooms[roomId];
-    if (!room || !text || !text.trim()) return;
+    if (!room || ((!text || !text.trim()) && !gifUrl)) return;
 
     // Check if user is muted by Host
     if (room.mutedSocketIds && room.mutedSocketIds.has(socket.id)) {
@@ -1393,9 +1442,10 @@ io.on("connection", (socket) => {
       id: `msg_${Date.now()}_${Math.random().toString(36).substr(2, 4)}`,
       username: username || socket.username || "Anonymous",
       avatarColor: avatarColor || "#6366f1",
-      text: text.trim(),
+      text: text ? text.trim() : "",
+      gifUrl: gifUrl || null,
       time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
-      replyTo: replyTo && replyTo.username && replyTo.text ? { username: replyTo.username, text: replyTo.text } : null,
+      replyTo: replyTo && replyTo.username ? { username: replyTo.username, text: replyTo.text || "GIF" } : null,
     };
 
     room.chatMessages.push(chatItem);
@@ -1475,6 +1525,62 @@ io.on("connection", (socket) => {
     });
 
     broadcastRoomSync(roomId);
+  });
+
+  // 15. Toggle Co-Host Status (Primary Host only)
+  socket.on("toggle-co-host", ({ roomId, targetUsername }, callback) => {
+    const room = rooms[roomId];
+    if (!room || !targetUsername) return;
+
+    const reqUser = (socket.username || "").trim().toLowerCase();
+    const mainHost = (room.adminUsername || "").trim().toLowerCase();
+
+    if (!mainHost || reqUser !== mainHost) {
+      if (callback) callback({ success: false, message: "Only the primary Room Host can assign Co-Hosts." });
+      return;
+    }
+
+    if (!room.coHostUsernames) {
+      room.coHostUsernames = new Set();
+    }
+
+    const cleanTarget = targetUsername.trim();
+    const cleanTargetLower = cleanTarget.toLowerCase();
+
+    if (cleanTargetLower === mainHost) {
+      if (callback) callback({ success: false, message: "Primary Host is already the main admin." });
+      return;
+    }
+
+    let isNowCoHost = false;
+    let foundKey = null;
+    for (const existingName of room.coHostUsernames) {
+      if (existingName.toLowerCase() === cleanTargetLower) {
+        foundKey = existingName;
+        break;
+      }
+    }
+
+    if (foundKey) {
+      room.coHostUsernames.delete(foundKey);
+      isNowCoHost = false;
+    } else {
+      room.coHostUsernames.add(cleanTarget);
+      isNowCoHost = true;
+    }
+
+    const sysMsg = {
+      id: `msg_${Date.now()}`,
+      system: true,
+      text: isNowCoHost
+        ? `⭐ ${cleanTarget} was promoted to Co-Host by ${room.adminUsername}.`
+        : `ℹ️ ${cleanTarget}'s Co-Host permissions were removed.`,
+      time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+    };
+    room.chatMessages.push(sysMsg);
+
+    broadcastRoomSync(roomId);
+    if (callback) callback({ success: true, isCoHost: isNowCoHost });
   });
 
   // 14. Host Participant Management: Transfer Host Ownership

@@ -60,6 +60,7 @@ export default function App() {
     () => localStorage.getItem("musync_avatar_color") || "#8b5cf6"
   );
   const [isHost, setIsHost] = useState(false);
+  const [isMainHost, setIsMainHost] = useState(false);
   const [roomState, setRoomState] = useState(null);
 
   // Initial invite URL query parsing
@@ -371,6 +372,7 @@ export default function App() {
       if (!state) return;
       setRoomState(state);
       setIsHost(Boolean(state.isCurrentClientAdmin));
+      setIsMainHost(Boolean(state.isCurrentClientMainHost));
       setHasPasscode(Boolean(state.hasPasscode));
 
       // Sync chat messages if initial or updated
@@ -936,15 +938,16 @@ function performClientSearchFallback(query) {
 
   // Fast Instant Chat (Optimistic 0ms Local Delivery + Background Socket Broadcast)
   const handleSendChat = useCallback(
-    (text, replyTo = null) => {
-      if (!text || !text.trim()) return;
+    (text, replyTo = null, gifUrl = null) => {
+      if ((!text || !text.trim()) && !gifUrl) return;
       const optimisticMsg = {
         id: `msg_opt_${Date.now()}_${Math.random().toString(36).substr(2, 4)}`,
         username,
         avatarColor,
-        text: text.trim(),
+        text: text ? text.trim() : "",
+        gifUrl: gifUrl || null,
         time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
-        replyTo: replyTo && replyTo.username && replyTo.text ? { username: replyTo.username, text: replyTo.text } : null,
+        replyTo: replyTo && replyTo.username ? { username: replyTo.username, text: replyTo.text || "GIF" } : null,
         optimistic: true,
       };
 
@@ -954,10 +957,11 @@ function performClientSearchFallback(query) {
       // Emit to server
       socket.emit("send-chat", {
         roomId,
-        text: text.trim(),
+        text: text ? text.trim() : "",
+        gifUrl: gifUrl || null,
         username,
         avatarColor,
-        replyTo: replyTo && replyTo.username && replyTo.text ? { username: replyTo.username, text: replyTo.text } : null,
+        replyTo: replyTo && replyTo.username ? { username: replyTo.username, text: replyTo.text || "GIF" } : null,
       });
     },
     [roomId, username, avatarColor]
@@ -994,6 +998,32 @@ function performClientSearchFallback(query) {
         targetSocketId: user.socketId,
       });
       showToast(`👑 Transferred Host role to @${user.username}!`, "success");
+    },
+    [roomId, showToast]
+  );
+
+  const handleToggleCoHost = useCallback(
+    (targetUser) => {
+      if (!roomId || !targetUser) return;
+      socket.emit(
+        "toggle-co-host",
+        {
+          roomId,
+          targetUsername: targetUser.username,
+        },
+        (res) => {
+          if (res?.success) {
+            showToast(
+              res.isCoHost
+                ? `⭐ Promoted @${targetUser.username} to Co-Host!`
+                : `Removed Co-Host role from @${targetUser.username}`,
+              "success"
+            );
+          } else if (res?.message) {
+            showToast(res.message, "error");
+          }
+        }
+      );
     },
     [roomId, showToast]
   );
@@ -1280,6 +1310,8 @@ function performClientSearchFallback(query) {
               onKickUser={handleKickUser}
               onTransferHost={handleTransferHost}
               onToggleMuteUser={handleToggleMuteUser}
+              isMainHost={isMainHost}
+              onToggleCoHost={handleToggleCoHost}
             />
           </section>
         </main>

@@ -21,6 +21,9 @@ import {
   Volume2,
   Radio,
   Reply,
+  Star,
+  Image as ImageIcon,
+  Film,
 } from "lucide-react";
 
 const QUICK_SEARCH_PROMPTS = [
@@ -31,11 +34,23 @@ const QUICK_SEARCH_PROMPTS = [
   "Late Night Drive",
 ];
 
+const POPULAR_MUSIC_GIFS = [
+  { id: "g1", title: "Vibing Cat", url: "https://media.giphy.com/media/3o7TKSjRrfIPjeiVyM/giphy.gif" },
+  { id: "g2", title: "DJ Scratch", url: "https://media.giphy.com/media/l0HlHJGHe3yAMhdQY/giphy.gif" },
+  { id: "g3", title: "Lofi Chill", url: "https://media.giphy.com/media/L91x6i26kXGvI2V6nB/giphy.gif" },
+  { id: "g4", title: "Groove Dog", url: "https://media.giphy.com/media/blSTtZehjAZ8I/giphy.gif" },
+  { id: "g5", title: "Retro Dance", url: "https://media.giphy.com/media/13hxeOYjo5DHue/giphy.gif" },
+  { id: "g6", title: "Party Jam", url: "https://media.giphy.com/media/l2JIdnF6aJnAqzDgY/giphy.gif" },
+  { id: "g7", title: "Neon Synth", url: "https://media.giphy.com/media/cklPOH2vEPnES82VZX/giphy.gif" },
+  { id: "g8", title: "Headbanging", url: "https://media.giphy.com/media/l41K3o5TzManKz88E/giphy.gif" },
+];
+
 const REACTION_EMOJIS = ["🔥", "❤️", "🎵", "🎉", "🚀", "👏", "💃", "🎧", "✨"];
 
 function QueueAndRequests({
   roomId,
   isHost,
+  isMainHost,
   username,
   avatarColor,
   users = [],
@@ -59,6 +74,7 @@ function QueueAndRequests({
   onKickUser,
   onTransferHost,
   onToggleMuteUser,
+  onToggleCoHost,
 }) {
   const [activeTab, setActiveTab] = useState("search"); // 'search' | 'queue' | 'requests' | 'chat' | 'participants'
   const [searchQuery, setSearchQuery] = useState("");
@@ -67,6 +83,10 @@ function QueueAndRequests({
   const [confirmTransferUser, setConfirmTransferUser] = useState(null);
   const [hasUnreadChat, setHasUnreadChat] = useState(false);
   const [replyingTo, setReplyingTo] = useState(null);
+  const [isGifPickerOpen, setIsGifPickerOpen] = useState(false);
+  const [gifSearchQuery, setGifSearchQuery] = useState("");
+  const [gifSearchResults, setGifSearchResults] = useState([]);
+  const [isSearchingGifs, setIsSearchingGifs] = useState(false);
   const prevChatCountRef = useRef(chatMessages.length);
   const chatEndRef = useRef(null);
   const chatInputRef = useRef(null);
@@ -126,6 +146,45 @@ function QueueAndRequests({
   const handleQuickSearch = (term) => {
     setSearchQuery(term);
     onSearch(term);
+  };
+
+  const handleSearchGifs = async (query) => {
+    setGifSearchQuery(query);
+    if (!query.trim()) {
+      setGifSearchResults([]);
+      return;
+    }
+    setIsSearchingGifs(true);
+    try {
+      const res = await fetch(
+        `https://api.giphy.com/v1/gifs/search?api_key=dc6zaTOxFJmzC&q=${encodeURIComponent(
+          query
+        )}&limit=12`
+      );
+      const data = await res.json();
+      if (data && data.data) {
+        const formatted = data.data.map((g) => ({
+          id: g.id,
+          title: g.title,
+          url: g.images?.fixed_height?.url || g.images?.original?.url,
+        }));
+        setGifSearchResults(formatted);
+      }
+    } catch (e) {
+      console.error("GIF search failed", e);
+    } finally {
+      setIsSearchingGifs(false);
+    }
+  };
+
+  const handleSendGif = (gifUrl) => {
+    setIsGifPickerOpen(false);
+    onSendChat(
+      "",
+      replyingTo ? { username: replyingTo.username, text: replyingTo.text || "GIF" } : null,
+      gifUrl
+    );
+    setReplyingTo(null);
   };
 
   const handleStartReply = (msg) => {
@@ -572,7 +631,17 @@ function QueueAndRequests({
                                 <p className="quoted-text">"{msg.replyTo.text}"</p>
                               </div>
                             )}
-                            <p>{msg.text}</p>
+                            {msg.gifUrl && (
+                              <div className="chat-gif-container">
+                                <img
+                                  src={msg.gifUrl}
+                                  alt="Animated GIF"
+                                  className="chat-gif-img"
+                                  loading="lazy"
+                                />
+                              </div>
+                            )}
+                            {msg.text && <p>{msg.text}</p>}
                           </div>
                           <span className="chat-time">{msg.time}</span>
                         </div>
@@ -608,6 +677,73 @@ function QueueAndRequests({
               </div>
             )}
 
+            {/* GIF Picker Popover */}
+            {isGifPickerOpen && (
+              <div className="gif-picker-popover">
+                <div className="gif-picker-header">
+                  <div className="gif-search-box">
+                    <Search size={13} className="text-dim" />
+                    <input
+                      type="text"
+                      className="gif-search-input"
+                      placeholder="Search animated GIFs..."
+                      value={gifSearchQuery}
+                      onChange={(e) => handleSearchGifs(e.target.value)}
+                    />
+                    {gifSearchQuery && (
+                      <button
+                        type="button"
+                        className="clear-gif-search"
+                        onClick={() => handleSearchGifs("")}
+                      >
+                        <X size={12} />
+                      </button>
+                    )}
+                  </div>
+                  <button
+                    type="button"
+                    className="close-gif-picker"
+                    onClick={() => setIsGifPickerOpen(false)}
+                  >
+                    <X size={14} />
+                  </button>
+                </div>
+
+                <div className="gif-grid-container">
+                  {isSearchingGifs ? (
+                    <div className="gif-picker-loading">
+                      <Sparkles size={16} className="animate-spin text-accent" />
+                      <span>Searching GIFs...</span>
+                    </div>
+                  ) : gifSearchQuery && gifSearchResults.length > 0 ? (
+                    gifSearchResults.map((gif) => (
+                      <button
+                        key={gif.id}
+                        type="button"
+                        className="gif-grid-item"
+                        onClick={() => handleSendGif(gif.url)}
+                      >
+                        <img src={gif.url} alt={gif.title} loading="lazy" />
+                      </button>
+                    ))
+                  ) : (
+                    POPULAR_MUSIC_GIFS.map((gif) => (
+                      <button
+                        key={gif.id}
+                        type="button"
+                        className="gif-grid-item"
+                        onClick={() => handleSendGif(gif.url)}
+                        title={gif.title}
+                      >
+                        <img src={gif.url} alt={gif.title} loading="lazy" />
+                        <span className="gif-tag">{gif.title}</span>
+                      </button>
+                    ))
+                  )}
+                </div>
+              </div>
+            )}
+
             {/* Mute Alert or Chat Input */}
             {isMuted ? (
               <div className="muted-chat-alert">
@@ -616,6 +752,15 @@ function QueueAndRequests({
               </div>
             ) : (
               <form onSubmit={handleChatSubmit} className="chat-input-form">
+                <button
+                  type="button"
+                  className={`chat-gif-btn ${isGifPickerOpen ? "active" : ""}`}
+                  onClick={() => setIsGifPickerOpen(!isGifPickerOpen)}
+                  title="Insert animated GIF"
+                >
+                  <Film size={15} />
+                  <span>GIF</span>
+                </button>
                 <input
                   ref={chatInputRef}
                   type="text"
@@ -674,7 +819,15 @@ function QueueAndRequests({
                           {isCurrentUser && <span className="you-chip">You</span>}
                         </div>
                         <div className="participant-status-badges">
-                          {userIsAdmin ? (
+                          {user.isMainHost ? (
+                            <span className="role-tag host">
+                              <Crown size={11} /> Main Host
+                            </span>
+                          ) : user.isCoHost ? (
+                            <span className="role-tag cohost">
+                              <Star size={11} /> Co-Host
+                            </span>
+                          ) : userIsAdmin ? (
                             <span className="role-tag host">
                               <Crown size={11} /> Host
                             </span>
@@ -692,9 +845,18 @@ function QueueAndRequests({
                       </div>
                     </div>
 
-                    {/* Host Action Controls */}
+                    {/* Host & Co-Host Action Controls */}
                     {isHost && !isCurrentUser && (
                       <div className="participant-actions">
+                        {isMainHost && !user.isMainHost && (
+                          <button
+                            className={`p-action-btn ${user.isCoHost ? "btn-cohost-active" : "btn-cohost"}`}
+                            title={user.isCoHost ? "Remove Co-Host Role" : "Make Co-Host"}
+                            onClick={() => onToggleCoHost && onToggleCoHost(user)}
+                          >
+                            <Star size={14} />
+                          </button>
+                        )}
                         <button
                           className={`p-action-btn ${userIsMuted ? "btn-unmute" : "btn-mute"}`}
                           title={userIsMuted ? "Unmute in Chat" : "Mute in Chat"}
@@ -702,13 +864,15 @@ function QueueAndRequests({
                         >
                           {userIsMuted ? <Volume2 size={14} /> : <VolumeX size={14} />}
                         </button>
-                        <button
-                          className="p-action-btn btn-crown"
-                          title="Transfer Room Host"
-                          onClick={() => setConfirmTransferUser(user)}
-                        >
-                          <Crown size={14} />
-                        </button>
+                        {isMainHost && !user.isMainHost && (
+                          <button
+                            className="p-action-btn btn-crown"
+                            title="Transfer Primary Host"
+                            onClick={() => setConfirmTransferUser(user)}
+                          >
+                            <Crown size={14} />
+                          </button>
+                        )}
                         <button
                           className="p-action-btn btn-kick"
                           title="Remove from Room"
