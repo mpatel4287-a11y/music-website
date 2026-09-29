@@ -17,6 +17,7 @@ import {
   RefreshCw,
   TrendingUp,
 } from "lucide-react";
+import CoverFlowUpcoming from "./CoverFlowUpcoming";
 
 const GENRE_TABS = [
   { id: "classic", label: "Classic", solid: true },
@@ -110,6 +111,7 @@ export default function DashboardView({
   const [roomsList, setRoomsList] = useState([]);
   const [isLoadingRooms, setIsLoadingRooms] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+  const [roomFilterQuery, setRoomFilterQuery] = useState("");
 
   // Location State
   const [locationPermission, setLocationPermission] = useState("prompt"); // 'prompt' | 'granted' | 'denied' | 'locating'
@@ -242,7 +244,7 @@ export default function DashboardView({
   const [songSearchResults, setSongSearchResults] = useState([]);
   const [isSearchingSongs, setIsSearchingSongs] = useState(false);
 
-  // Live YouTube song search on Dashboard search input change
+  // Live YouTube song search on Dashboard search input change with fast fallback
   useEffect(() => {
     if (!searchQuery.trim()) {
       setSongSearchResults([]);
@@ -251,33 +253,54 @@ export default function DashboardView({
     }
 
     setIsSearchingSongs(true);
+    const q = searchQuery.trim().toLowerCase();
+
+    // Instant local matching from recommendations & curated songs so results appear immediately
+    const localMatches = [];
+    for (const genre in CLIENT_FALLBACK_RECOMMENDATIONS) {
+      for (const s of CLIENT_FALLBACK_RECOMMENDATIONS[genre]) {
+        if (
+          s.title.toLowerCase().includes(q) ||
+          s.artist.toLowerCase().includes(q)
+        ) {
+          if (!localMatches.some((m) => m.videoId === s.videoId)) {
+            localMatches.push(s);
+          }
+        }
+      }
+    }
+    if (localMatches.length > 0) {
+      setSongSearchResults(localMatches);
+    }
+
     const timer = setTimeout(() => {
       fetch(`${effectiveBackend}/api/search?q=${encodeURIComponent(searchQuery.trim())}`)
         .then((res) => (res.ok ? res.json() : { results: [] }))
         .then((data) => {
-          setSongSearchResults(data.results || []);
+          if (data.results && data.results.length > 0) {
+            setSongSearchResults(data.results);
+          }
         })
         .catch((err) => {
           console.warn("Dashboard song search error:", err);
-          setSongSearchResults([]);
         })
         .finally(() => {
           setIsSearchingSongs(false);
         });
-    }, 400);
+    }, 350);
 
     return () => clearTimeout(timer);
   }, [searchQuery, effectiveBackend]);
 
-  // Filter Active Rooms based on Access & Search Query
+  // Filter Active Rooms based on Access & roomFilterQuery
   const filteredRooms = roomsList.filter((room) => {
     // Access Filter
     if (accessFilter === "free" && room.hasPasscode) return false;
     if (accessFilter === "protected" && !room.hasPasscode) return false;
 
-    // Search Query
-    if (searchQuery.trim()) {
-      const q = searchQuery.toLowerCase();
+    // Room Search Query
+    if (roomFilterQuery.trim()) {
+      const q = roomFilterQuery.toLowerCase();
       const matchId = room.roomId.toLowerCase().includes(q);
       const matchTrack = room.trackTitle?.toLowerCase().includes(q);
       const matchHost = room.adminUsername?.toLowerCase().includes(q);
@@ -435,6 +458,14 @@ export default function DashboardView({
           )}
         </section>
       )}
+
+      {/* 3D CoverFlow Up Next & Trending Carousel */}
+      <CoverFlowUpcoming
+        tracks={recommendations}
+        onPlayTrack={onHostSongDirect}
+        isHost={true}
+        title="Up Next & Trending Hits"
+      />
 
       {/* 2. Music Categories & Tracks Shelf */}
       <section className="dashboard-section">
@@ -602,8 +633,8 @@ export default function DashboardView({
           <input
             type="text"
             placeholder="Search active rooms by Room ID, Track Title, Host or Location..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
+            value={roomFilterQuery}
+            onChange={(e) => setRoomFilterQuery(e.target.value)}
             className="room-search-input"
           />
         </div>

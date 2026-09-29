@@ -5062,20 +5062,20 @@ h1, h2, h3, h4, h5, h6,
 .dashboard-hero-card,
 .room-explorer-card,
 .song-recommendation-card {
-  background: #ffffff !important;
-  border: 2px solid #000000 !important;
-  color: #000000 !important;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08) !important;
+  background: var(--card-bg) !important;
+  border: 2px solid var(--card-border) !important;
+  color: var(--text-main) !important;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12) !important;
 }
 
 .btn-primary-glow,
 .btn-accent-glow,
 .btn-join-room {
-  background: #000000 !important;
-  color: #ffffff !important;
+  background: var(--accent-gradient) !important;
+  color: var(--bg-primary) !important;
   border: none !important;
   border-radius: 9999px !important;
-  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.2) !important;
+  box-shadow: 0 4px 14px var(--accent-glow) !important;
   font-weight: 700 !important;
 }
 
@@ -5092,7 +5092,8 @@ html, body, #root,
   width: 100% !important;
   max-width: 100% !important;
   margin: 0 !important;
-  background: #dcdce0 !important;
+  background-color: var(--bg-primary) !important;
+  color: var(--text-main) !important;
 }
 
 .dashboard-container {
@@ -5100,11 +5101,11 @@ html, body, #root,
   height: calc(100vh - 68px) !important;
 }
 
-/* Auth Modal & Input Field High Contrast (Stark Black Text on White Input) */
+/* Auth Modal & Input Field High Contrast (Theme Aware) */
 .auth-overlay,
 .modal-overlay,
 .confirm-overlay {
-  background: rgba(0, 0, 0, 0.65) !important;
+  background: rgba(0, 0, 0, 0.75) !important;
   backdrop-filter: blur(8px) !important;
 }
 
@@ -5112,18 +5113,18 @@ html, body, #root,
 .auth-modal-card,
 .modal-card,
 .confirm-card {
-  background: #ffffff !important;
-  border: 3px solid #000000 !important;
-  color: #000000 !important;
+  background: var(--card-bg) !important;
+  border: 2px solid var(--card-border) !important;
+  color: var(--text-main) !important;
   border-radius: 20px !important;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4) !important;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5) !important;
 }
 
 .auth-modal-card .form-label,
 .auth-card label,
 .modal-card label,
 .form-label {
-  color: #000000 !important;
+  color: var(--text-main) !important;
   font-weight: 800 !important;
   font-size: 0.9rem !important;
 }
@@ -5137,17 +5138,16 @@ input[type="text"],
 input[type="email"],
 input[type="password"],
 input[type="search"] {
-  background: #ffffff !important;
-  color: #000000 !important;
-  border: 2px solid #000000 !important;
+  background: var(--input-bg) !important;
+  color: var(--input-text) !important;
+  border: 2px solid var(--border-dark) !important;
   border-radius: 10px !important;
   padding: 0.75rem 1rem !important;
   font-size: 0.95rem !important;
   font-weight: 700 !important;
-  caret-color: #000000 !important;
+  caret-color: var(--text-main) !important;
   outline: none !important;
   box-sizing: border-box !important;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05) !important;
 }
 
 .auth-modal-card .form-input::placeholder,
@@ -5155,8 +5155,8 @@ input[type="search"] {
 .modal-input::placeholder,
 .form-input::placeholder,
 input::placeholder {
-  color: #555555 !important;
-  opacity: 1 !important;
+  color: var(--text-dim) !important;
+  opacity: 0.8 !important;
   font-weight: 500 !important;
 }
 
@@ -5166,10 +5166,10 @@ input::placeholder {
 .modal-input:focus,
 .form-input:focus,
 input:focus {
-  background: #ffffff !important;
-  color: #000000 !important;
-  border-color: #000000 !important;
-  box-shadow: 0 0 0 3px rgba(0, 0, 0, 0.25) !important;
+  background: var(--input-bg) !important;
+  color: var(--input-text) !important;
+  border-color: var(--accent-primary) !important;
+  box-shadow: 0 0 0 3px var(--border-glow) !important;
 }
 
 /* Chrome/Safari Browser Autofill Override */
@@ -5819,4 +5819,221 @@ input:checked + .slider:before {
     height: 22px !important;
     font-size: 0.75rem !important;
   }
+}
+
+/* ==========================================================================
+   17. 3D COVERFLOW UP NEXT QUEUE CAROUSEL
+   ========================================================================== */
+.coverflow-stage-wrapper {
+  background: var(--card-bg);
+  border: 2px solid var(--card-border);
+  border-radius: 20px;
+  padding: 1.25rem;
+  margin: 1rem 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+}
+
+.coverflow-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.75rem;
+}
+
+.coverflow-title-group {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.coverflow-heading {
+  font-size: 1rem;
+  font-weight: 800;
+  color: var(--text-main);
+  letter-spacing: -0.3px;
+}
+
+.coverflow-badge {
+  background: var(--input-bg);
+  border: 1px solid var(--border-dark);
+  color: var(--text-main);
+  font-size: 0.7rem;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 9999px;
+}
+
+.coverflow-3d-scene {
+  perspective: 1200px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 260px;
+  width: 100%;
+  position: relative;
+  overflow: hidden;
+}
+
+.coverflow-carousel {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transform-style: preserve-3d;
+}
+
+.coverflow-card {
+  position: absolute;
+  width: 190px;
+  height: 230px;
+  border-radius: 18px;
+  overflow: hidden;
+  box-shadow: 0 14px 34px rgba(0, 0, 0, 0.45);
+  cursor: pointer;
+  user-select: none;
+  transition: all 0.4s cubic-bezier(0.25, 1, 0.5, 1);
+  border: 2px solid var(--card-border);
+  background: var(--bg-secondary);
+}
+
+.coverflow-card.active-center {
+  border-color: var(--accent-primary);
+  box-shadow: 0 18px 45px rgba(0, 0, 0, 0.6);
+}
+
+.coverflow-card-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.coverflow-active-badge {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  padding: 10px 12px;
+  background: rgba(0, 0, 0, 0.75);
+  backdrop-filter: blur(8px);
+  color: #ffffff;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.coverflow-track-title {
+  font-size: 0.85rem;
+  font-weight: 800;
+  color: #ffffff;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin: 0;
+}
+
+.coverflow-track-artist {
+  font-size: 0.72rem;
+  color: #cbd5e1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin: 0;
+}
+
+.coverflow-dark-tint {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.35);
+  pointer-events: none;
+}
+
+.coverflow-pill-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  background: var(--input-bg);
+  border: 2px solid var(--border-dark);
+  border-radius: 9999px;
+  padding: 6px 14px;
+  margin: 12px auto 0;
+  max-width: 500px;
+  width: 100%;
+}
+
+.coverflow-nav-arrow {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: none;
+  color: var(--text-main);
+  cursor: pointer;
+  transition: transform 0.15s ease;
+}
+
+.coverflow-nav-arrow:hover {
+  transform: scale(1.15);
+  color: var(--accent-primary);
+}
+
+.coverflow-play-btn {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--accent-gradient);
+  color: var(--bg-primary);
+  border: none;
+  cursor: pointer;
+  box-shadow: 0 2px 8px var(--accent-glow);
+  flex-shrink: 0;
+  transition: transform 0.15s ease;
+}
+
+.coverflow-play-btn:hover {
+  transform: scale(1.12);
+}
+
+.coverflow-now-info {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  overflow: hidden;
+  font-size: 0.8rem;
+  color: var(--text-main);
+  flex: 1;
+}
+
+.coverflow-info-label {
+  font-size: 0.68rem;
+  font-weight: 800;
+  color: var(--accent-primary);
+  letter-spacing: 0.5px;
+  flex-shrink: 0;
+}
+
+.coverflow-info-title {
+  font-weight: 700;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.coverflow-info-artist {
+  color: var(--text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }

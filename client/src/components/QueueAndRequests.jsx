@@ -25,6 +25,7 @@ import {
   Image as ImageIcon,
   Film,
 } from "lucide-react";
+import CoverFlowUpcoming from "./CoverFlowUpcoming";
 
 const QUICK_SEARCH_PROMPTS = [
   "Lofi Chill Beats",
@@ -422,8 +423,17 @@ function QueueAndRequests({
         {/* ================= 2. UP NEXT (QUEUE) TAB ================= */}
         {activeTab === "queue" && (
           <div className="tab-pane queue-pane">
-            <div className="pane-header-row">
-              <span className="pane-heading">Upcoming Songs ({queue.length})</span>
+            {/* 3D CoverFlow Carousel for Up Next tracks */}
+            <CoverFlowUpcoming
+              tracks={queue}
+              onPlayTrack={onPlaySongDirect}
+              onAddToQueue={onAddToQueue}
+              isHost={isHost}
+              title="Up Next (Upcoming Songs)"
+            />
+
+            <div className="pane-header-row" style={{ marginTop: "1rem" }}>
+              <span className="pane-heading">Queue List ({queue.length})</span>
               {isHost && queue.length > 0 && (
                 <span className="pane-hint">Songs will play automatically in order</span>
               )}

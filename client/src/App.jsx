@@ -799,7 +799,7 @@ function performClientSearchFallback(query) {
       try {
         const activeBackend = BACKEND_URL && BACKEND_URL.startsWith("http")
           ? BACKEND_URL
-          : "https://music-website-production.up.railway.app";
+          : "https://musync-ligw.onrender.com";
 
         const res = await fetch(`${activeBackend}/api/search?q=${encodeURIComponent(query)}`);
         const data = res.ok ? await res.json() : { results: [] };
