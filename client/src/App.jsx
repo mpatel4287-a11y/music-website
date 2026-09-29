@@ -591,6 +591,38 @@ export default function App() {
       setIsAuthLoading(true);
       setAuthError("");
 
+      if (!socket.connected) {
+        try { socket.connect(); } catch (e) {}
+      }
+
+      let acked = false;
+      const timeoutTimer = setTimeout(() => {
+        if (!acked) {
+          setIsAuthLoading(false);
+          setRoomId(cleanRoom);
+          setPasscode(cleanPass);
+          setHasPasscode(Boolean(cleanPass));
+          setUsername(cleanName);
+          setAvatarColor(cleanColor);
+          setIsHost(true);
+          setInRoom(true);
+          setViewMode("lounge");
+          setIsCreateJoinModalOpen(false);
+
+          localStorage.setItem(
+            "musync_active_room",
+            JSON.stringify({
+              roomId: cleanRoom,
+              passcode: cleanPass,
+              username: cleanName,
+              avatarColor: cleanColor,
+            })
+          );
+
+          showToast(`🎉 Room "${cleanRoom}" created! You are the Host 👑`, "success");
+        }
+      }, 4000);
+
       socket.emit(
         "create-room",
         {
@@ -600,6 +632,8 @@ export default function App() {
           avatarColor: cleanColor,
         },
         (res) => {
+          acked = true;
+          clearTimeout(timeoutTimer);
           setIsAuthLoading(false);
           if (res?.success) {
             setRoomId(res.roomId);

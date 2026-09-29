@@ -3399,15 +3399,16 @@ input:checked + .slider:before {
 
 /* Hero Welcome Card */
 .dashboard-hero-card {
-  background: linear-gradient(135deg, rgba(30, 24, 70, 0.95), rgba(75, 25, 115, 0.75), rgba(15, 23, 42, 0.95));
-  border: 1px solid rgba(139, 92, 246, 0.35);
+  background: var(--card-bg);
+  border: 2px solid var(--card-border);
   backdrop-filter: blur(20px);
   border-radius: 24px;
   padding: 2.25rem 2.5rem;
   min-height: 170px;
   position: relative;
   overflow: hidden;
-  box-shadow: 0 14px 40px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.15);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+  transition: background 0.25s ease, border-color 0.25s ease;
 }
 
 .hero-ambient-glow {
@@ -3416,7 +3417,7 @@ input:checked + .slider:before {
   right: -10%;
   width: 350px;
   height: 350px;
-  background: radial-gradient(circle, rgba(236, 72, 153, 0.25) 0%, rgba(139, 92, 246, 0.1) 60%, transparent 80%);
+  background: radial-gradient(circle, rgba(168, 85, 247, 0.15) 0%, transparent 80%);
   filter: blur(40px);
   pointer-events: none;
 }
@@ -3440,8 +3441,8 @@ input:checked + .slider:before {
 .hero-avatar-ring {
   padding: 3px;
   border-radius: 50%;
-  border: 2px solid #8b5cf6;
-  box-shadow: 0 0 20px rgba(139, 92, 246, 0.4);
+  border: 2px solid var(--accent-primary);
+  box-shadow: 0 0 16px var(--border-glow);
 }
 
 .hero-avatar {
@@ -3460,14 +3461,14 @@ input:checked + .slider:before {
   display: inline-flex;
   align-items: center;
   gap: 0.35rem;
-  background: rgba(139, 92, 246, 0.15);
-  border: 1px solid rgba(139, 92, 246, 0.3);
+  background: var(--input-bg);
+  border: 1px solid var(--border-dark);
   padding: 2px 8px;
   border-radius: 9999px;
   font-size: 0.65rem;
   font-weight: 800;
   letter-spacing: 0.5px;
-  color: #c4b5fd;
+  color: var(--text-main);
   margin-bottom: 0.35rem;
 }
 
@@ -3480,16 +3481,15 @@ input:checked + .slider:before {
 .hero-greeting {
   font-size: 1.85rem;
   font-weight: 800;
-  color: #ffffff !important;
+  color: var(--text-main) !important;
   margin: 0.25rem 0 0.35rem 0;
   letter-spacing: -0.5px;
-  text-shadow: 0 2px 12px rgba(0, 0, 0, 0.4);
   line-height: 1.25;
 }
 
 .hero-subtext {
   font-size: 0.88rem;
-  color: #cbd5e1;
+  color: var(--text-muted);
   line-height: 1.4;
 }
 
@@ -3872,12 +3872,12 @@ input:checked + .slider:before {
   align-items: center;
   justify-content: space-between;
   gap: 1rem;
-  background: linear-gradient(135deg, rgba(30, 41, 59, 0.8), rgba(15, 23, 42, 0.9));
-  border: 1px solid rgba(139, 92, 246, 0.25);
+  background: var(--card-bg);
+  border: 2px solid var(--card-border);
   backdrop-filter: blur(12px);
   padding: 0.85rem 1.25rem;
   border-radius: 16px;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
   flex-wrap: wrap;
 }
 
@@ -3890,43 +3890,42 @@ input:checked + .slider:before {
 .location-prompt-text h4 {
   font-size: 0.92rem;
   font-weight: 700;
-  color: white;
+  color: var(--text-main);
   margin-bottom: 2px;
 }
 
 .location-prompt-text p {
   font-size: 0.78rem;
-  color: #94a3b8;
+  color: var(--text-muted);
 }
 
 .btn-enable-location {
   display: flex;
   align-items: center;
   gap: 0.45rem;
-  background: linear-gradient(135deg, #10b981, #059669);
-  color: white;
+  background: var(--accent-gradient);
+  color: var(--bg-primary);
   border: none;
   padding: 0.55rem 1.1rem;
   border-radius: 12px;
   font-size: 0.82rem;
   font-weight: 700;
   cursor: pointer;
-  box-shadow: 0 4px 14px rgba(16, 185, 129, 0.35);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.15);
   transition: all 0.2s ease;
   white-space: nowrap;
 }
 
 .btn-enable-location:hover {
   transform: translateY(-2px);
-  box-shadow: 0 6px 18px rgba(16, 185, 129, 0.45);
 }
 
 .location-status-bar {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  background: rgba(16, 185, 129, 0.1);
-  border: 1px solid rgba(16, 185, 129, 0.3);
+  background: var(--card-bg);
+  border: 2px solid var(--card-border);
   padding: 0.6rem 1rem;
   border-radius: 14px;
 }
@@ -3935,7 +3934,7 @@ input:checked + .slider:before {
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  color: #6ee7b7;
+  color: var(--text-main);
   font-size: 0.84rem;
   font-weight: 600;
 }
