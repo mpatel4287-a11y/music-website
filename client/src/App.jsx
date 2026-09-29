@@ -36,7 +36,7 @@ const getBackendUrl = () => {
 const BACKEND_URL = getBackendUrl();
 
 const socket = io(BACKEND_URL || undefined, {
-  transports: ["websocket", "polling"],
+  transports: ["polling", "websocket"],
   reconnectionAttempts: 10,
   autoConnect: true,
 });
@@ -580,7 +580,7 @@ export default function App() {
     return () => clearInterval(interval);
   }, []);
 
-  // Handle Create Room
+  // Handle Create Room (Instant 0ms entry - zero loading delay)
   const handleCreateRoom = useCallback(
     ({ roomId: newRoomId, passcode: newPasscode, username: uname, avatarColor: color }) => {
       const cleanRoom = (newRoomId || "").trim().toLowerCase();
@@ -588,87 +588,46 @@ export default function App() {
       const cleanName = (uname || "").trim() || username || `DJ-${Math.floor(1000 + Math.random() * 9000)}`;
       const cleanColor = color || avatarColor || "#8b5cf6";
 
-      setIsAuthLoading(true);
+      // 1. Immediately transition to room without delay
+      setIsAuthLoading(false);
       setAuthError("");
+      setRoomId(cleanRoom);
+      setPasscode(cleanPass);
+      setHasPasscode(Boolean(cleanPass));
+      setUsername(cleanName);
+      setAvatarColor(cleanColor);
+      setIsHost(true);
+      setInRoom(true);
+      setViewMode("lounge");
+      setIsCreateJoinModalOpen(false);
 
-      if (!socket.connected) {
-        try { socket.connect(); } catch (e) {}
-      }
-
-      let acked = false;
-      const timeoutTimer = setTimeout(() => {
-        if (!acked) {
-          setIsAuthLoading(false);
-          setRoomId(cleanRoom);
-          setPasscode(cleanPass);
-          setHasPasscode(Boolean(cleanPass));
-          setUsername(cleanName);
-          setAvatarColor(cleanColor);
-          setIsHost(true);
-          setInRoom(true);
-          setViewMode("lounge");
-          setIsCreateJoinModalOpen(false);
-
-          localStorage.setItem(
-            "musync_active_room",
-            JSON.stringify({
-              roomId: cleanRoom,
-              passcode: cleanPass,
-              username: cleanName,
-              avatarColor: cleanColor,
-            })
-          );
-
-          showToast(`🎉 Room "${cleanRoom}" created! You are the Host 👑`, "success");
-        }
-      }, 4000);
-
-      socket.emit(
-        "create-room",
-        {
+      localStorage.setItem(
+        "musync_active_room",
+        JSON.stringify({
           roomId: cleanRoom,
           passcode: cleanPass,
           username: cleanName,
           avatarColor: cleanColor,
-        },
-        (res) => {
-          acked = true;
-          clearTimeout(timeoutTimer);
-          setIsAuthLoading(false);
-          if (res?.success) {
-            setRoomId(res.roomId);
-            setPasscode(cleanPass);
-            setHasPasscode(Boolean(cleanPass));
-            setUsername(cleanName);
-            setAvatarColor(cleanColor);
-            setIsHost(true);
-            setInRoom(true);
-            setViewMode("lounge");
-            setIsCreateJoinModalOpen(false);
-
-            localStorage.setItem(
-              "musync_active_room",
-              JSON.stringify({
-                roomId: res.roomId,
-                passcode: cleanPass,
-                username: cleanName,
-                avatarColor: cleanColor,
-              })
-            );
-
-            const newUrl = `${window.location.pathname}?room=${encodeURIComponent(res.roomId)}${
-              cleanPass ? `&pass=${encodeURIComponent(cleanPass)}` : ""
-            }`;
-            window.history.pushState({}, "", newUrl);
-            showToast(`🎉 Room "${res.roomId}" created! You are the Host 👑`, "success");
-          } else {
-            setAuthError(res?.message || "Failed to create room. Please try again.");
-            setInitialUrlRoomId(cleanRoom);
-            setIsCreateJoinModalOpen(true);
-            showToast(`⚠️ ${res?.message || "Failed to create room."}`, "error");
-          }
-        }
+        })
       );
+
+      const newUrl = `${window.location.pathname}?room=${encodeURIComponent(cleanRoom)}${
+        cleanPass ? `&pass=${encodeURIComponent(cleanPass)}` : ""
+      }`;
+      window.history.pushState({}, "", newUrl);
+      showToast(`🎉 Room "${cleanRoom}" created! You are the Host 👑`, "success");
+
+      // 2. Register room on server via socket in background
+      if (!socket.connected) {
+        try { socket.connect(); } catch (e) {}
+      }
+
+      socket.emit("create-room", {
+        roomId: cleanRoom,
+        passcode: cleanPass,
+        username: cleanName,
+        avatarColor: cleanColor,
+      });
     },
     [username, avatarColor, showToast]
   );

@@ -5201,7 +5201,7 @@ input:-webkit-autofill:active {
   width: 100vw !important;
   height: 100vh !important;
   z-index: 999999 !important;
-  background: rgba(220, 220, 224, 0.98) !important;
+  background: var(--bg-primary) !important;
   backdrop-filter: blur(12px) !important;
   display: flex !important;
   align-items: flex-start !important;
@@ -5224,19 +5224,19 @@ input:-webkit-autofill:active {
 
 .onboarding-brand .brand-title {
   font-family: var(--font-heading-pixel), 'Silkscreen', monospace !important;
-  color: #000000 !important;
+  color: var(--text-main) !important;
   text-shadow: none !important;
 }
 
 .onboarding-brand .brand-tagline {
-  color: #444444 !important;
+  color: var(--text-muted) !important;
   font-weight: 600 !important;
 }
 
 .brand-badge {
-  background: #000000 !important;
-  color: #ffffff !important;
-  border: none !important;
+  background: var(--input-bg) !important;
+  color: var(--text-main) !important;
+  border: 1px solid var(--border-dark) !important;
   border-radius: 9999px !important;
   font-weight: 700 !important;
 }
@@ -5244,76 +5244,76 @@ input:-webkit-autofill:active {
 .identity-card,
 .room-tabs-card,
 .passcode-toggle-card {
-  background: #ffffff !important;
-  border: 2px solid #000000 !important;
+  background: var(--card-bg) !important;
+  border: 2px solid var(--card-border) !important;
   border-radius: 20px !important;
-  color: #000000 !important;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08) !important;
+  color: var(--text-main) !important;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15) !important;
 }
 
 .identity-title,
 .toggle-title,
 .form-group label,
 .tabs-nav span {
-  color: #000000 !important;
+  color: var(--text-main) !important;
   font-weight: 800 !important;
 }
 
 .randomize-btn,
 .text-link-btn {
-  color: #000000 !important;
+  color: var(--accent-primary) !important;
   font-weight: 700 !important;
   text-decoration: underline !important;
 }
 
 .input-field,
 .input-with-icon input {
-  background: #ffffff !important;
-  color: #000000 !important;
-  border: 2px solid #000000 !important;
+  background: var(--input-bg) !important;
+  color: var(--input-text) !important;
+  border: 2px solid var(--border-dark) !important;
   border-radius: 10px !important;
   font-weight: 700 !important;
-  caret-color: #000000 !important;
+  caret-color: var(--text-main) !important;
 }
 
 .input-icon {
-  color: #000000 !important;
+  color: var(--text-dim) !important;
 }
 
 .tab-btn {
-  background: #ffffff !important;
-  color: #000000 !important;
-  border: 1.5px solid #000000 !important;
+  background: var(--input-bg) !important;
+  color: var(--text-main) !important;
+  border: 1.5px solid var(--border-dark) !important;
   font-weight: 700 !important;
   border-radius: 12px !important;
 }
 
 .tab-btn.active {
-  background: #000000 !important;
-  color: #ffffff !important;
-  border: 1.5px solid #000000 !important;
+  background: var(--accent-primary) !important;
+  color: var(--bg-primary) !important;
+  border: 1.5px solid var(--accent-primary) !important;
 }
 
 .submit-action-btn {
-  background: #000000 !important;
-  color: #ffffff !important;
+  background: var(--accent-gradient) !important;
+  color: var(--bg-primary) !important;
   border: none !important;
   border-radius: 9999px !important;
   font-family: var(--font-heading-pixel), 'Silkscreen', monospace !important;
   font-weight: 700 !important;
-  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.25) !important;
+  box-shadow: 0 4px 14px var(--accent-glow) !important;
 }
 
 .feature-pill {
-  background: #ffffff !important;
-  border: 1.5px solid #000000 !important;
-  color: #000000 !important;
+  background: var(--card-bg) !important;
+  border: 1.5px solid var(--card-border) !important;
+  color: var(--text-main) !important;
   font-weight: 700 !important;
   border-radius: 9999px !important;
 }
 
 .pill-dot {
-  background: #000000 !important;
+  background: var(--accent-primary) !important;
 }
 
 /* ==========================================================================
