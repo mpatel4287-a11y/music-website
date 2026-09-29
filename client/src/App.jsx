@@ -7,6 +7,7 @@ import CreateJoinModal from "./components/CreateJoinModal";
 import Header from "./components/Header";
 import PlayerPanel from "./components/PlayerPanel";
 import LyricsPanel from "./components/LyricsPanel";
+import CenterQueuePanel from "./components/CenterQueuePanel";
 import QueueAndRequests from "./components/QueueAndRequests";
 import ShareModal from "./components/ShareModal";
 import ParticipantsModal from "./components/ParticipantsModal";
@@ -99,8 +100,8 @@ export default function App() {
   // Chat State (Real-time dedicated state for 0ms ultra-fast messaging)
   const [chatMessages, setChatMessages] = useState([]);
 
-  // Mobile Navigation State
-  const [activeMobileTab, setActiveMobileTab] = useState("player");
+  // Mobile Navigation State ('lyrics' | 'queue' | 'sidebar')
+  const [activeMobileTab, setActiveMobileTab] = useState("queue");
   const [hasUnreadMobileChat, setHasUnreadMobileChat] = useState(false);
   const prevMobileChatCountRef = useRef(chatMessages.length);
 
@@ -1252,6 +1253,13 @@ function performClientSearchFallback(query) {
         />
       </div>
 
+      {/* Ambient Cosmic Background Glow Mesh */}
+      <div className="musync-ambient-glow" aria-hidden="true">
+        <div className="glow-orb-1"></div>
+        <div className="glow-orb-2"></div>
+        <div className="glow-orb-3"></div>
+      </div>
+
       {/* Floating Reaction Emojis Overlay */}
       <FloatingReactions reactions={reactions} />
 
@@ -1320,11 +1328,22 @@ function performClientSearchFallback(query) {
       ) : (
         /* Main Multi-Panel Music Lounge Layout */
         <main className={`musync-main-grid mobile-tab-${activeMobileTab}`}>
-          {/* Left Column: Player, Vinyl, Visualizer, Controls */}
-          <section className="grid-col-player">
-            <PlayerPanel
-              roomState={roomState}
+          {/* Left Column: Live Synced Lyrics & Turntable Player */}
+          <section className="grid-col-lyrics">
+            <LyricsPanel
+              lyrics={lyrics}
+              isLoadingLyrics={isLoadingLyrics}
+              currentLineIndex={currentLineIndex}
+              onLineClick={(time) => {
+                if (isHost && playerRef.current) {
+                  playerRef.current.seekTo(time, true);
+                  socket.emit("action", { roomId, type: "SEEK", value: time });
+                }
+              }}
               isHost={isHost}
+              trackTitle={roomState?.trackTitle}
+              artistName={roomState?.artistName}
+              roomState={roomState}
               currentTime={currentTime}
               duration={duration}
               isSeeking={isSeeking}
@@ -1340,25 +1359,20 @@ function performClientSearchFallback(query) {
             />
           </section>
 
-          {/* Center Column: Live Synced Lyrics */}
-          <section className="grid-col-lyrics">
-            <LyricsPanel
-              lyrics={lyrics}
-              isLoadingLyrics={isLoadingLyrics}
-              currentLineIndex={currentLineIndex}
-              onLineClick={(time) => {
-                if (isHost && playerRef.current) {
-                  playerRef.current.seekTo(time, true);
-                  socket.emit("action", { roomId, type: "SEEK", value: time });
-                }
-              }}
+          {/* Center Column: Up Next 3D CoverFlow & Collaborative Queue */}
+          <section className="grid-col-queue">
+            <CenterQueuePanel
+              queue={roomState?.queue || []}
+              roomState={roomState}
               isHost={isHost}
-              trackTitle={roomState?.trackTitle}
-              artistName={roomState?.artistName}
+              onPlaySongDirect={handlePlaySongDirect}
+              onAddToQueue={handleAddToQueue}
+              onRemoveFromQueue={handleRemoveFromQueue}
+              onPlayQueueItem={handlePlayQueueItem}
             />
           </section>
 
-          {/* Rightmost Column: Search, Queue, Requests, Chat & Participants */}
+          {/* Rightmost Column: Search, Requests, Chat & Participants */}
           <section className="grid-col-sidebar">
             <QueueAndRequests
               roomId={roomId}

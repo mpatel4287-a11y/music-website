@@ -4,26 +4,12 @@ import { Disc3, AlignLeft, MessageSquare, LogOut } from "lucide-react";
 function MobileNav({ activeTab, onTabChange, isPlaying, requestsCount = 0, hasUnreadChat = false, onLeaveRoom }) {
   return (
     <nav className="mobile-bottom-nav">
-      {/* Player Tab */}
-      <button
-        type="button"
-        className={`mobile-nav-btn ${activeTab === "player" ? "active" : ""}`}
-        onClick={() => onTabChange("player")}
-        title="Player & Controls"
-      >
-        <div className="nav-icon-wrapper">
-          <Disc3 size={20} className={isPlaying ? "spin-slow text-accent" : ""} />
-          {isPlaying && <span className="active-dot-ping"></span>}
-        </div>
-        <span className="nav-label">Player</span>
-      </button>
-
-      {/* Lyrics Tab */}
+      {/* Lyrics & Player Tab */}
       <button
         type="button"
         className={`mobile-nav-btn ${activeTab === "lyrics" ? "active" : ""}`}
         onClick={() => onTabChange("lyrics")}
-        title="Live Synced Lyrics"
+        title="Live Synced Lyrics & Player"
       >
         <div className="nav-icon-wrapper">
           <AlignLeft size={20} />
@@ -31,12 +17,26 @@ function MobileNav({ activeTab, onTabChange, isPlaying, requestsCount = 0, hasUn
         <span className="nav-label">Lyrics</span>
       </button>
 
-      {/* Queue & Chat Studio Lounge Tab */}
+      {/* Center Queue & Coverflow Tab */}
+      <button
+        type="button"
+        className={`mobile-nav-btn ${activeTab === "queue" ? "active" : ""}`}
+        onClick={() => onTabChange("queue")}
+        title="Up Next 3D Queue"
+      >
+        <div className="nav-icon-wrapper">
+          <Disc3 size={20} className={isPlaying ? "spin-slow text-accent" : ""} />
+          {isPlaying && <span className="active-dot-ping"></span>}
+        </div>
+        <span className="nav-label">Queue</span>
+      </button>
+
+      {/* Social Lounge & Chat Tab */}
       <button
         type="button"
         className={`mobile-nav-btn ${activeTab === "sidebar" ? "active" : ""}`}
         onClick={() => onTabChange("sidebar")}
-        title="Queue, Requests & Chat"
+        title="Search, Requests & Chat"
       >
         <div className="nav-icon-wrapper">
           <MessageSquare size={20} />

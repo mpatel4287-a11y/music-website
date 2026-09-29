@@ -184,21 +184,8 @@ function Header({
             className="theme-toggle-btn"
             onClick={onToggleTheme}
             title={theme === "dark" ? "Switch to Light Mode" : "Switch to Dark Mode"}
-            style={{
-              display: "inline-flex",
-              alignItems: "center",
-              justifyContent: "center",
-              width: "36px",
-              height: "36px",
-              borderRadius: "50%",
-              backgroundColor: "var(--input-bg)",
-              border: "1px solid var(--border-subtle)",
-              color: "var(--text-main)",
-              cursor: "pointer",
-              transition: "all 0.2s ease",
-            }}
           >
-            {theme === "dark" ? <Sun size={17} className="text-warning" /> : <Moon size={17} className="text-accent" />}
+            {theme === "dark" ? <Sun size={16} className="text-warning" /> : <Moon size={16} className="text-accent" />}
           </button>
         )}
 
