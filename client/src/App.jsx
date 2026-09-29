@@ -42,6 +42,18 @@ const socket = io(BACKEND_URL || undefined, {
 });
 
 export default function App() {
+  // Theme State ('dark' | 'light')
+  const [theme, setTheme] = useState(() => localStorage.getItem("musync_theme") || "dark");
+
+  useEffect(() => {
+    document.documentElement.setAttribute("data-theme", theme);
+    localStorage.setItem("musync_theme", theme);
+  }, [theme]);
+
+  const handleToggleTheme = useCallback(() => {
+    setTheme((prev) => (prev === "dark" ? "light" : "dark"));
+  }, []);
+
   // Navigation & View Mode State ('dashboard' | 'lounge')
   const [viewMode, setViewMode] = useState("dashboard");
   const [isNicknameModalOpen, setIsNicknameModalOpen] = useState(false);
@@ -1200,6 +1212,8 @@ function performClientSearchFallback(query) {
         viewMode={viewMode}
         onToggleViewMode={() => setViewMode(viewMode === "lounge" ? "dashboard" : "lounge")}
         onOpenNicknameModal={() => setIsNicknameModalOpen(true)}
+        theme={theme}
+        onToggleTheme={handleToggleTheme}
       />
 
       {/* Nickname Selection Modal */}

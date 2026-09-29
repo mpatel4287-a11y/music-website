@@ -12,7 +12,8 @@ import {
   UserCog,
   Compass,
   Radio,
-  Edit2,
+  Sun,
+  Moon,
 } from "lucide-react";
 
 function Header({
@@ -30,10 +31,11 @@ function Header({
   viewMode = "lounge",
   onToggleViewMode,
   onOpenNicknameModal,
+  theme = "dark",
+  onToggleTheme,
 }) {
   const [showPasscodeText, setShowPasscodeText] = useState(false);
   const [copiedLink, setCopiedLink] = useState(false);
-
 
   const handleQuickCopyLink = () => {
     let url = `${window.location.origin}/?room=${encodeURIComponent(roomId)}`;
@@ -58,7 +60,6 @@ function Header({
           </div>
           <span className={`brand-name pixel-font-title ${roomId ? "desktop-only" : ""}`}>Musync</span>
         </div>
-
 
         {/* View Mode Switcher (Dashboard vs Lounge) */}
         {onToggleViewMode && (
@@ -139,7 +140,7 @@ function Header({
         )}
       </div>
 
-      {/* Online Listeners & User Profile */}
+      {/* Online Listeners, Theme Toggle & User Profile */}
       <div className="header-right">
         {roomId && users && (
           <button
@@ -176,10 +177,38 @@ function Header({
           </button>
         )}
 
-
+        {/* Dark / Light Theme Toggle Button */}
+        {onToggleTheme && (
+          <button
+            type="button"
+            className="theme-toggle-btn"
+            onClick={onToggleTheme}
+            title={theme === "dark" ? "Switch to Light Mode" : "Switch to Dark Mode"}
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              justifyContent: "center",
+              width: "36px",
+              height: "36px",
+              borderRadius: "50%",
+              backgroundColor: "var(--input-bg)",
+              border: "1px solid var(--border-subtle)",
+              color: "var(--text-main)",
+              cursor: "pointer",
+              transition: "all 0.2s ease",
+            }}
+          >
+            {theme === "dark" ? <Sun size={17} className="text-warning" /> : <Moon size={17} className="text-accent" />}
+          </button>
+        )}
 
         {/* User Nickname Badge */}
-        <div className="current-user-chip" title={`Logged in as ${username || "Listener"}`}>
+        <div
+          className="current-user-chip"
+          title={`Logged in as ${username || "Listener"}. Click to edit display name.`}
+          onClick={onOpenNicknameModal}
+          style={{ cursor: "pointer" }}
+        >
           <div
             className="profile-avatar-circle"
             style={{
@@ -193,13 +222,13 @@ function Header({
           </span>
         </div>
 
-        {/* Leave / Exit Room Button with Confirmation Trigger */}
+        {/* Leave / Exit Room Button */}
         {roomId && (
           <button
             type="button"
             className="leave-room-btn"
             onClick={onLeaveRoom}
-            title="Exit this room (with confirmation)"
+            title="Exit this room"
           >
             <LogOut size={15} />
             <span className="desktop-only">Exit Room</span>
