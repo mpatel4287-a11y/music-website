@@ -3605,13 +3605,14 @@ input:checked + .slider:before {
 /* Recommendation Song Grid */
 .recommendations-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(215px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
   gap: 1.25rem;
+  width: 100%;
 }
 
 .song-recommendation-card {
-  background: rgba(20, 24, 38, 0.85);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: var(--card-bg);
+  border: 2px solid var(--card-border);
   border-radius: 18px;
   padding: 0.9rem;
   display: flex;
@@ -3619,13 +3620,14 @@ input:checked + .slider:before {
   gap: 0.65rem;
   transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
   position: relative;
+  overflow: hidden;
 }
 
 .song-recommendation-card:hover {
   transform: translateY(-5px);
-  background: rgba(30, 36, 56, 0.95);
-  border-color: rgba(139, 92, 246, 0.4);
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.45);
+  background: var(--card-bg-hover);
+  border-color: var(--accent-primary);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
 }
 
 .card-artwork-wrapper {
@@ -3634,7 +3636,7 @@ input:checked + .slider:before {
   aspect-ratio: 16 / 9;
   border-radius: 12px;
   overflow: hidden;
-  background: #0f111a;
+  background: var(--bg-secondary);
 }
 
 .card-artwork-img {
@@ -3668,13 +3670,13 @@ input:checked + .slider:before {
   width: 46px;
   height: 46px;
   border-radius: 50%;
-  background: linear-gradient(135deg, #8b5cf6, #ec4899);
+  background: var(--accent-gradient);
   border: none;
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.6);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
   transition: transform 0.15s;
 }
 
@@ -3687,7 +3689,7 @@ input:checked + .slider:before {
   bottom: 6px;
   right: 6px;
   background: rgba(0, 0, 0, 0.85);
-  color: white;
+  color: #ffffff;
   font-size: 0.68rem;
   font-weight: 700;
   padding: 2px 6px;
@@ -3703,7 +3705,7 @@ input:checked + .slider:before {
 .song-card-title {
   font-size: 0.88rem;
   font-weight: 700;
-  color: white;
+  color: var(--text-main);
   display: -webkit-box;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
@@ -3714,7 +3716,7 @@ input:checked + .slider:before {
 
 .song-card-artist {
   font-size: 0.76rem;
-  color: #94a3b8;
+  color: var(--text-muted);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -3725,22 +3727,22 @@ input:checked + .slider:before {
   align-items: center;
   justify-content: center;
   gap: 0.35rem;
-  background: rgba(139, 92, 246, 0.15);
-  border: 1px solid rgba(139, 92, 246, 0.3);
-  color: #c4b5fd;
+  background: var(--input-bg);
+  border: 1px solid var(--border-dark);
+  color: var(--text-main);
   padding: 0.45rem;
   border-radius: 10px;
   font-size: 0.78rem;
-  font-weight: 600;
+  font-weight: 700;
   cursor: pointer;
   transition: all 0.15s;
   margin-top: 0.2rem;
 }
 
 .btn-mini-host-song:hover {
-  background: rgba(139, 92, 246, 0.32);
-  color: white;
-  border-color: rgba(139, 92, 246, 0.5);
+  background: var(--accent-primary);
+  color: var(--bg-primary);
+  border-color: var(--accent-primary);
 }
 
 /* Regional & Free Rooms Explorer Grid */
@@ -3748,8 +3750,8 @@ input:checked + .slider:before {
   display: flex;
   align-items: center;
   gap: 0.6rem;
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: var(--input-bg);
+  border: 2px solid var(--border-dark);
   padding: 0.65rem 1rem;
   border-radius: 14px;
   margin-bottom: 0.5rem;
@@ -3759,20 +3761,20 @@ input:checked + .slider:before {
   flex: 1;
   background: transparent;
   border: none;
-  color: white;
+  color: var(--input-text);
   font-size: 0.9rem;
   outline: none;
 }
 
 .active-rooms-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(310px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(290px, 1fr));
   gap: 1.25rem;
 }
 
 .room-explorer-card {
-  background: rgba(20, 24, 38, 0.85);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: var(--card-bg);
+  border: 2px solid var(--card-border);
   backdrop-filter: blur(12px);
   border-radius: 20px;
   padding: 1.25rem;
@@ -3780,24 +3782,29 @@ input:checked + .slider:before {
   flex-direction: column;
   gap: 0.9rem;
   transition: all 0.2s ease;
+  overflow: hidden;
 }
 
 .room-explorer-card:hover {
   transform: translateY(-4px);
-  border-color: rgba(139, 92, 246, 0.45);
-  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.45);
+  border-color: var(--accent-primary);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.2);
 }
 
 .room-card-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: 8px;
+  flex-wrap: wrap;
 }
 
 .room-title-info {
   display: flex;
   align-items: center;
   gap: 0.5rem;
+  min-width: 0;
+  flex: 1;
 }
 
 .live-pulse-dot {
@@ -3806,18 +3813,24 @@ input:checked + .slider:before {
   background-color: var(--success);
   border-radius: 50%;
   box-shadow: 0 0 8px var(--success);
+  flex-shrink: 0;
 }
 
 .room-card-id {
   font-size: 1.05rem;
   font-weight: 800;
-  color: white;
+  color: var(--text-main);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .room-badge-group {
   display: flex;
   align-items: center;
   gap: 0.4rem;
+  flex-wrap: wrap;
+  max-width: 100%;
 }
 
 .text-trending-fire {

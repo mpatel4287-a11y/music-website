@@ -6,86 +6,86 @@
   --font-mono: 'JetBrains Mono', monospace;
 }
 
-/* Dark Theme (Default 🌙) */
+/* Dark Mode 🌙 (Pitch Black & High Contrast White Text) */
 :root, [data-theme="dark"] {
-  --bg-primary: #0f0f14;
-  --bg-secondary: #171720;
-  --bg-surface: #1e1e29;
-  --bg-surface-elevated: #262635;
-  --bg-surface-hover: #2f2f42;
+  --bg-primary: #050505;
+  --bg-secondary: #0f0f12;
+  --bg-surface: #141418;
+  --bg-surface-elevated: #1a1a24;
+  --bg-surface-hover: #222230;
   
-  --header-bg: rgba(18, 18, 26, 0.92);
-  --header-border: rgba(255, 255, 255, 0.1);
+  --header-bg: rgba(10, 10, 14, 0.95);
+  --header-border: rgba(255, 255, 255, 0.15);
   
-  --border-subtle: rgba(255, 255, 255, 0.12);
-  --border-dark: rgba(255, 255, 255, 0.25);
-  --border-glow: rgba(168, 85, 247, 0.4);
+  --border-subtle: rgba(255, 255, 255, 0.15);
+  --border-dark: #333342;
+  --border-glow: rgba(255, 255, 255, 0.3);
   
-  --accent-primary: #a855f7;
-  --accent-secondary: #8b5cf6;
-  --accent-gradient: linear-gradient(135deg, #a855f7 0%, #6366f1 100%);
-  --accent-glow: 0 4px 20px rgba(168, 85, 247, 0.35);
+  --accent-primary: #ffffff;
+  --accent-secondary: #a855f7;
+  --accent-gradient: linear-gradient(135deg, #ffffff 0%, #a855f7 100%);
+  --accent-glow: 0 4px 20px rgba(255, 255, 255, 0.2);
   
-  --text-main: #f8fafc;
-  --text-muted: #cbd5e1;
-  --text-dim: #94a3b8;
+  --text-main: #ffffff;
+  --text-muted: #d4d4d8;
+  --text-dim: #a1a1aa;
   
-  --card-bg: #181824;
-  --card-bg-hover: #222232;
-  --card-border: rgba(255, 255, 255, 0.1);
+  --card-bg: #121216;
+  --card-bg-hover: #1c1c22;
+  --card-border: rgba(255, 255, 255, 0.15);
   
-  --input-bg: rgba(255, 255, 255, 0.06);
-  --input-border: rgba(255, 255, 255, 0.15);
+  --input-bg: rgba(255, 255, 255, 0.08);
+  --input-border: rgba(255, 255, 255, 0.2);
   --input-text: #ffffff;
   
   --success: #22c55e;
   --warning: #f59e0b;
   --danger: #ef4444;
 
-  --deck-metal-bg: linear-gradient(145deg, #272734 0%, #1a1a24 50%, #2e2e40 100%);
-  --deck-metal-shadow: 0 20px 40px rgba(0, 0, 0, 0.6);
-  --vinyl-center-badge: #333345;
+  --deck-metal-bg: linear-gradient(145deg, #22222b 0%, #121218 50%, #2a2a36 100%);
+  --deck-metal-shadow: 0 20px 40px rgba(0, 0, 0, 0.8);
+  --vinyl-center-badge: #2a2a36;
 }
 
-/* Light Theme (☀️) */
+/* Light Mode ☀️ (Pure White & Solid Black Text) */
 [data-theme="light"] {
-  --bg-primary: #f1f5f9;
-  --bg-secondary: #e2e8f0;
+  --bg-primary: #ffffff;
+  --bg-secondary: #f4f4f5;
   --bg-surface: #ffffff;
-  --bg-surface-elevated: #ffffff;
-  --bg-surface-hover: #f8fafc;
+  --bg-surface-elevated: #f4f4f5;
+  --bg-surface-hover: #e4e4e7;
   
-  --header-bg: rgba(255, 255, 255, 0.94);
-  --header-border: rgba(0, 0, 0, 0.1);
+  --header-bg: rgba(255, 255, 255, 0.96);
+  --header-border: #000000;
   
-  --border-subtle: rgba(0, 0, 0, 0.12);
-  --border-dark: rgba(0, 0, 0, 0.25);
-  --border-glow: rgba(124, 58, 237, 0.3);
+  --border-subtle: #000000;
+  --border-dark: #000000;
+  --border-glow: rgba(0, 0, 0, 0.2);
   
-  --accent-primary: #7c3aed;
-  --accent-secondary: #6d28d9;
-  --accent-gradient: linear-gradient(135deg, #7c3aed 0%, #4f46e5 100%);
-  --accent-glow: 0 4px 20px rgba(124, 58, 237, 0.2);
+  --accent-primary: #000000;
+  --accent-secondary: #27272a;
+  --accent-gradient: linear-gradient(135deg, #000000 0%, #27272a 100%);
+  --accent-glow: 0 4px 16px rgba(0, 0, 0, 0.15);
   
-  --text-main: #0f172a;
-  --text-muted: #334155;
-  --text-dim: #64748b;
+  --text-main: #000000;
+  --text-muted: #18181b;
+  --text-dim: #3f3f46;
   
   --card-bg: #ffffff;
-  --card-bg-hover: #f8fafc;
-  --card-border: rgba(0, 0, 0, 0.12);
+  --card-bg-hover: #f4f4f5;
+  --card-border: #000000;
   
-  --input-bg: rgba(0, 0, 0, 0.04);
-  --input-border: rgba(0, 0, 0, 0.18);
-  --input-text: #0f172a;
+  --input-bg: #ffffff;
+  --input-border: #000000;
+  --input-text: #000000;
   
   --success: #16a34a;
   --warning: #d97706;
   --danger: #dc2626;
 
-  --deck-metal-bg: linear-gradient(145deg, #e2e8f0 0%, #cbd5e1 50%, #f1f5f9 100%);
-  --deck-metal-shadow: 0 10px 30px rgba(0, 0, 0, 0.12);
-  --vinyl-center-badge: #e2e8f0;
+  --deck-metal-bg: linear-gradient(145deg, #e4e4e7 0%, #d4d4d8 50%, #f4f4f5 100%);
+  --deck-metal-shadow: 0 10px 24px rgba(0, 0, 0, 0.15);
+  --vinyl-center-badge: #d4d4d8;
 }
 
 *, *::before, *::after {
@@ -124,12 +124,12 @@ html, body {
 }
 
 ::-webkit-scrollbar-thumb {
-  background: rgba(168, 85, 247, 0.25);
+  background: var(--border-subtle);
   border-radius: 9999px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(168, 85, 247, 0.6);
+  background: var(--accent-primary);
 }
 
 /* Range input slider styling */
@@ -149,7 +149,7 @@ input[type="range"]::-webkit-slider-thumb {
   border-radius: 50%;
   background: var(--accent-primary);
   cursor: pointer;
-  box-shadow: 0 0 10px rgba(168, 85, 247, 0.8);
+  box-shadow: 0 0 8px var(--accent-primary);
   transition: transform 0.15s ease;
 }
 
