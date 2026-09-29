@@ -29,8 +29,8 @@ const getBackendUrl = () => {
       return "http://localhost:5000";
     }
   }
-  // Production fallback to active Railway backend URL
-  return "https://music-website-production.up.railway.app";
+  // Production fallback to active Render backend URL
+  return "https://musync-ligw.onrender.com";
 };
 
 const BACKEND_URL = getBackendUrl();

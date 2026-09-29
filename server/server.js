@@ -43,7 +43,13 @@ app.get("/", (req, res, next) => {
   if (fs.existsSync(indexPath)) {
     return res.sendFile(indexPath);
   }
-  next();
+  res.json({
+    status: "ok",
+    service: "Musync Real-Time Sync & Audio API Engine",
+    health: "/api/health",
+    frontend: "https://mu-sync-zeta.vercel.app",
+    timestamp: Date.now(),
+  });
 });
 
 const server = http.createServer(app);

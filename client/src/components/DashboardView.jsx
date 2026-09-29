@@ -86,7 +86,7 @@ const getEffectiveBackendUrl = (url) => {
   if (url && typeof url === "string" && url.startsWith("http")) {
     return url.replace(/\/$/, "");
   }
-  return "https://music-website-production.up.railway.app";
+  return "https://musync-ligw.onrender.com";
 };
 
 export default function DashboardView({
