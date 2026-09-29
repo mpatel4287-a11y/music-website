@@ -858,7 +858,8 @@ function getSanitizedRoomState(room, clientSocketId) {
     }
   }
 
-  const isAdmin = isMainHost || isCoHost || Boolean(user && user.isAdmin);
+  const isSingleUser = !room.users || room.users.length <= 1;
+  const isAdmin = isMainHost || isCoHost || isSingleUser || Boolean(user && user.isAdmin);
 
   let liveCurrentTime = room.currentTime || 0;
   if (room.isPlaying && room.lastUpdated) {
@@ -1222,12 +1223,26 @@ io.on("connection", (socket) => {
 
   // 3. Playback State Synchronization
   socket.on("action", (data) => {
-    const { roomId, type, value, trackTitle, artistName, thumbnail, durationSec } = data;
-    const room = rooms[roomId];
+    const { roomId, username: actionUsername, type, value, trackTitle, artistName, thumbnail, durationSec } = data || {};
+    const cleanRoomId = (roomId || "").trim().toLowerCase();
+    const room = rooms[cleanRoomId] || rooms[roomId];
     if (!room) return;
 
+    if (actionUsername && !socket.username) {
+      socket.username = actionUsername;
+    }
+
+    if (
+      actionUsername &&
+      room.adminUsername &&
+      actionUsername.trim().toLowerCase() === room.adminUsername.trim().toLowerCase()
+    ) {
+      room.adminSocketId = socket.id;
+    }
+
     // Strict Admin authorization check for playback control if more than 1 user
-    if (room.users.length > 1 && !isUserAdmin(room, socket)) {
+    const isSingleUser = !room.users || room.users.length <= 1;
+    if (!isSingleUser && !isUserAdmin(room, socket)) {
       socket.emit("notification", {
         type: "warning",
         message: "Only the Room Host can control playback.",
@@ -1263,10 +1278,10 @@ io.on("connection", (socket) => {
         time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
       };
       room.chatMessages.push(trackMsg);
-      io.to(roomId).emit("new-chat-message", trackMsg);
+      io.to(room.roomId).emit("new-chat-message", trackMsg);
     }
 
-    broadcastRoomSync(roomId);
+    broadcastRoomSync(room.roomId);
   });
 
   // Host playback timestamp heartbeat

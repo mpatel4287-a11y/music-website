@@ -20,12 +20,13 @@
   position: fixed;
   bottom: 0;
   right: 0;
-  width: 200px;
-  height: 200px;
-  opacity: 0.001;
+  width: 10px;
+  height: 10px;
+  opacity: 0.01;
   pointer-events: none;
-  z-index: -999;
+  z-index: 1;
   overflow: hidden;
+  clip-path: circle(0px at 0 0);
 }
 
 /* ==========================================================================
@@ -3170,37 +3171,60 @@ input:checked + .slider:before {
 
   .musync-main-grid {
     grid-template-columns: 1fr !important;
-    grid-template-rows: auto !important;
-    height: auto !important;
-    min-height: calc(100vh - 130px) !important;
-    padding: 0.75rem 0.75rem 5rem 0.75rem !important;
-    overflow-y: auto !important;
-    -webkit-overflow-scrolling: touch !important;
+    grid-template-rows: 1fr !important;
+    height: calc(100dvh - 114px) !important;
+    max-height: calc(100dvh - 114px) !important;
+    padding: 0.4rem 0.5rem !important;
+    overflow: hidden !important;
   }
 
   .musync-main-grid .grid-col-lyrics,
   .musync-main-grid .grid-col-queue,
   .musync-main-grid .grid-col-sidebar {
     display: none !important;
-    height: auto !important;
-    min-height: 100% !important;
-    overflow-y: auto !important;
-    -webkit-overflow-scrolling: touch !important;
+    height: 100% !important;
+    max-height: 100% !important;
+    overflow: hidden !important;
   }
 
   .musync-main-grid.mobile-tab-lyrics .grid-col-lyrics {
     display: flex !important;
     flex-direction: column !important;
+    height: 100% !important;
   }
 
   .musync-main-grid.mobile-tab-queue .grid-col-queue {
     display: flex !important;
     flex-direction: column !important;
+    height: 100% !important;
   }
 
   .musync-main-grid.mobile-tab-sidebar .grid-col-sidebar {
     display: flex !important;
     flex-direction: column !important;
+    height: 100% !important;
+  }
+
+  /* Full-height container cards inside mobile lounge panels */
+  .lyrics-card,
+  .center-queue-card,
+  .studio-tabs-card {
+    height: 100% !important;
+    max-height: 100% !important;
+    display: flex !important;
+    flex-direction: column !important;
+    overflow: hidden !important;
+    border-radius: 16px !important;
+  }
+
+  .lyrics-card-body,
+  .center-queue-scroll-body,
+  .studio-tab-body {
+    flex: 1 1 auto !important;
+    min-height: 0 !important;
+    overflow-y: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+    padding-bottom: 2.5rem !important;
   }
 
   /* Compact Player Artwork for Phone Screen Viewports */
@@ -3243,7 +3267,7 @@ input:checked + .slider:before {
     height: 36px;
   }
 
-  /* Bottom Phone Tab Navigation Bar */
+  /* Bottom Phone Tab Navigation Bar (Theme Aware & Safe Area Inset Aware) */
   .mobile-bottom-nav {
     display: flex;
     align-items: center;
@@ -3252,13 +3276,15 @@ input:checked + .slider:before {
     bottom: 0;
     left: 0;
     right: 0;
-    height: 62px;
-    background: rgba(14, 16, 24, 0.95);
+    height: calc(56px + env(safe-area-inset-bottom, 0px));
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+    background: var(--header-bg) !important;
     backdrop-filter: blur(20px);
     -webkit-backdrop-filter: blur(20px);
-    border-top: 1px solid rgba(255, 255, 255, 0.08);
-    z-index: 90;
-    padding: 0 0.5rem;
+    border-top: 1px solid var(--border-subtle) !important;
+    z-index: 9999;
+    padding-left: 0.5rem;
+    padding-right: 0.5rem;
   }
 
   .mobile-nav-btn {
@@ -6130,20 +6156,23 @@ input:-webkit-autofill:active {
    ========================================================================== */
 @media (max-width: 768px) {
   html, body, #root, .musync-app-root {
-    height: auto !important;
-    min-height: 100vh !important;
-    overflow-y: auto !important;
+    height: 100% !important;
+    height: 100dvh !important;
+    max-height: 100dvh !important;
+    overflow: hidden !important;
   }
 
   .app-header {
     padding: 0 0.85rem !important;
-    height: 60px !important;
+    height: 56px !important;
   }
 
   .dashboard-container {
-    padding: 1rem 0.85rem 3rem 0.85rem !important;
-    height: auto !important;
-    min-height: calc(100vh - 60px) !important;
+    padding: 1rem 0.85rem 4rem 0.85rem !important;
+    height: calc(100dvh - 56px) !important;
+    max-height: calc(100dvh - 56px) !important;
+    overflow-y: auto !important;
+    -webkit-overflow-scrolling: touch !important;
   }
 
   .onboarding-overlay,
@@ -6853,4 +6882,28 @@ input:checked + .slider:before {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+@media (max-width: 768px) {
+  .coverflow-stage-wrapper {
+    padding: 0.75rem !important;
+    margin: 0.5rem 0 !important;
+    border-radius: 16px !important;
+  }
+
+  .coverflow-3d-scene {
+    perspective: 800px !important;
+    height: 185px !important;
+  }
+
+  .coverflow-card {
+    width: 135px !important;
+    height: 165px !important;
+    border-radius: 12px !important;
+  }
+
+  .coverflow-pill-bar {
+    margin: 8px auto 0 !important;
+    padding: 4px 10px !important;
+  }
 }

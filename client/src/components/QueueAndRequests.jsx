@@ -362,7 +362,7 @@ function QueueAndRequests({
 
                       {/* Action Buttons */}
                       <div className="result-actions">
-                        {isHost ? (
+                        {(isHost || users.length <= 1) ? (
                           <>
                             <button
                               type="button"

@@ -849,21 +849,79 @@ function performClientSearchFallback(query) {
     []
   );
 
-  // Direct Play (Admin)
+  // Direct Play (Admin or Active User)
   const handlePlaySongDirect = useCallback(
     (song) => {
-      socket.emit("action", {
-        roomId,
-        type: "CHANGE_TRACK",
-        value: song.videoId,
-        trackTitle: song.title,
-        artistName: song.artist,
-        thumbnail: song.thumbnail,
-        durationSec: song.seconds,
-      });
+      if (!song || !song.videoId) return;
+
+      const activeRoom = roomId || roomIdRef.current;
+      const currentUname = username || usernameRef.current;
+      const trackDur = song.seconds || song.durationSec || (song.duration ? 180 : 180);
+
+      // 1. Immediately update optimistic state for 0ms response
+      setRoomState((prev) => ({
+        ...(prev || {}),
+        videoId: song.videoId,
+        trackTitle: song.title || "Selected Track",
+        artistName: song.artist || "Artist",
+        thumbnail: song.thumbnail || `https://img.youtube.com/vi/${song.videoId}/hqdefault.jpg`,
+        durationSec: trackDur,
+        isPlaying: true,
+        currentTime: 0,
+      }));
+
+      // 2. Direct player invocation inside user gesture stack to bypass browser autoplay blocks
+      if (playerRef.current) {
+        try {
+          playerRef.current.unMute();
+          playerRef.current.setVolume(volume);
+          if (typeof playerRef.current.loadVideoById === "function") {
+            playerRef.current.loadVideoById({
+              videoId: song.videoId,
+              startSeconds: 0,
+            });
+          }
+          if (typeof playerRef.current.playVideo === "function") {
+            playerRef.current.playVideo();
+          }
+        } catch (err) {
+          console.warn("Direct play activation error:", err);
+        }
+      }
+
+      // 3. Clear search results & notify
       setSearchResults([]);
+      showToast(`▶ Now Playing: "${song.title}"`, "success");
+
+      // 4. Fetch lyrics immediately
+      const trackKey = `${song.title || ""}_${song.artist || ""}`;
+      if (trackKey !== lastFetchedTrackRef.current) {
+        lastFetchedTrackRef.current = trackKey;
+        setIsLoadingLyrics(true);
+        fetchLyrics(song.title, song.artist)
+          .then((res) => {
+            setLyrics(res);
+            setCurrentLineIndex(-1);
+          })
+          .catch(() => setLyrics(null))
+          .finally(() => setIsLoadingLyrics(false));
+      }
+
+      // 5. Emit to backend for multi-user sync
+      if (activeRoom) {
+        socket.emit("action", {
+          roomId: activeRoom,
+          username: currentUname,
+          type: "CHANGE_TRACK",
+          value: song.videoId,
+          trackTitle: song.title,
+          artistName: song.artist,
+          thumbnail: song.thumbnail || `https://img.youtube.com/vi/${song.videoId}/hqdefault.jpg`,
+          durationSec: trackDur,
+        });
+      }
     },
-    [roomId]
+    [roomId, username, volume, showToast]
   );
 
   // Request Song (Listener)
@@ -929,12 +987,16 @@ function performClientSearchFallback(query) {
   // Play Specific Queue Item (Admin)
   const handlePlayQueueItem = useCallback(
     (queueItemId) => {
+      const queueItem = roomState?.queue?.find((q) => q.id === queueItemId);
+      if (queueItem) {
+        handlePlaySongDirect(queueItem);
+      }
       socket.emit("skip-track", {
         roomId,
         queueItemId,
       });
     },
-    [roomId]
+    [roomId, roomState?.queue, handlePlaySongDirect]
   );
 
   // Skip Track (Admin)
@@ -944,13 +1006,36 @@ function performClientSearchFallback(query) {
 
   // Playback Controls
   const handleTogglePlay = useCallback(() => {
-    const time = playerRef.current ? playerRef.current.getCurrentTime() : currentTime;
+    const willPlay = !roomState?.isPlaying;
+    const time = playerRef.current && typeof playerRef.current.getCurrentTime === "function"
+      ? playerRef.current.getCurrentTime()
+      : currentTime;
+
+    if (playerRef.current) {
+      try {
+        if (willPlay) {
+          playerRef.current.unMute();
+          playerRef.current.setVolume(volume);
+          playerRef.current.playVideo();
+        } else {
+          playerRef.current.pauseVideo();
+        }
+      } catch (e) {}
+    }
+
+    setRoomState((prev) => ({
+      ...(prev || {}),
+      isPlaying: willPlay,
+      currentTime: time,
+    }));
+
     socket.emit("action", {
       roomId,
-      type: roomState?.isPlaying ? "PAUSE" : "PLAY",
+      username,
+      type: willPlay ? "PLAY" : "PAUSE",
       value: time,
     });
-  }, [roomId, roomState?.isPlaying, currentTime]);
+  }, [roomId, username, roomState?.isPlaying, currentTime, volume]);
 
   const handleSeekChange = useCallback((e) => {
     setIsSeeking(true);
@@ -1170,6 +1255,26 @@ function performClientSearchFallback(query) {
     showToast("Logged out of account.", "info");
   };
 
+  // Handle YouTube Player Error
+  const handlePlayerError = useCallback(
+    (e) => {
+      const code = e?.data;
+      console.warn("YouTube player error:", code);
+      if (code === 150 || code === 101) {
+        showToast("⚠️ Track has embed restrictions on YouTube. Playing next track...", "warning");
+        if (isHost && roomState?.queue?.length > 0) {
+          handleSkipTrack();
+        }
+      } else if (code === 100 || code === 2) {
+        showToast("⚠️ Video not available. Skipping...", "warning");
+        if (isHost && roomState?.queue?.length > 0) {
+          handleSkipTrack();
+        }
+      }
+    },
+    [isHost, roomState?.queue?.length, handleSkipTrack, showToast]
+  );
+
   const handleHostSongDirect = (song) => {
     const newRoomId = `room_${Math.floor(1000 + Math.random() * 9000)}`;
     const myName = user?.username || username || `Host-${Math.floor(100 + Math.random() * 900)}`;
@@ -1183,19 +1288,9 @@ function performClientSearchFallback(query) {
     });
 
     setTimeout(() => {
-      socket.emit("add-to-queue", {
-        roomId: newRoomId,
-        song: {
-          videoId: song.videoId,
-          title: song.title,
-          artist: song.artist,
-          thumbnail: song.thumbnail,
-          duration: song.duration,
-          seconds: song.seconds || 200,
-        },
-      });
+      handlePlaySongDirect(song);
       setViewMode("lounge");
-    }, 400);
+    }, 200);
   };
 
   // Is current user muted by host?
@@ -1226,7 +1321,9 @@ function performClientSearchFallback(query) {
               disablekb: 1,
               playsinline: 1,
               enablejsapi: 1,
-              origin: window.location.origin,
+              fs: 0,
+              rel: 0,
+              origin: typeof window !== "undefined" ? window.location.origin : undefined,
             },
           }}
           onReady={(e) => {
@@ -1249,6 +1346,7 @@ function performClientSearchFallback(query) {
               } catch (err) {}
             }
           }}
+          onError={handlePlayerError}
           onEnd={handleVideoEnded}
         />
       </div>

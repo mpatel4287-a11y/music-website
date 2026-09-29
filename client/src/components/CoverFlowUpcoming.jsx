@@ -62,6 +62,18 @@ export default function CoverFlowUpcoming({
           },
         ];
 
+  const [isMobile, setIsMobile] = useState(
+    () => typeof window !== "undefined" && window.innerWidth <= 768
+  );
+
+  useEffect(() => {
+    const handleResize = () => {
+      setIsMobile(window.innerWidth <= 768);
+    };
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
+
   useEffect(() => {
     if (activeIndex >= displayTracks.length) {
       setActiveIndex(Math.max(0, displayTracks.length - 1));
@@ -98,28 +110,31 @@ export default function CoverFlowUpcoming({
             // Only render cards within range of 2 on each side for smooth 3D view
             if (Math.abs(offset) > 2) return null;
 
+            const step1 = isMobile ? 80 : 120;
+            const step2 = isMobile ? 140 : 210;
+
             let cardTransform = "";
             let zIndex = 1;
             let opacity = 0.5;
 
             if (isCenter) {
-              cardTransform = "translateX(0) translateZ(60px) scale(1.08)";
+              cardTransform = `translateX(0) translateZ(${isMobile ? "30px" : "60px"}) scale(${isMobile ? 1.04 : 1.08})`;
               zIndex = 10;
               opacity = 1;
             } else if (offset === 1) {
-              cardTransform = "translateX(120px) translateZ(0) rotateY(-28deg) scale(0.88)";
+              cardTransform = `translateX(${step1}px) translateZ(0) rotateY(-28deg) scale(${isMobile ? 0.82 : 0.88})`;
               zIndex = 5;
               opacity = 0.85;
             } else if (offset === -1) {
-              cardTransform = "translateX(-120px) translateZ(0) rotateY(28deg) scale(0.88)";
+              cardTransform = `translateX(-${step1}px) translateZ(0) rotateY(28deg) scale(${isMobile ? 0.82 : 0.88})`;
               zIndex = 5;
               opacity = 0.85;
             } else if (offset === 2) {
-              cardTransform = "translateX(210px) translateZ(-40px) rotateY(-38deg) scale(0.75)";
+              cardTransform = `translateX(${step2}px) translateZ(-40px) rotateY(-38deg) scale(${isMobile ? 0.68 : 0.75})`;
               zIndex = 2;
               opacity = 0.55;
             } else if (offset === -2) {
-              cardTransform = "translateX(-210px) translateZ(-40px) rotateY(38deg) scale(0.75)";
+              cardTransform = `translateX(-${step2}px) translateZ(-40px) rotateY(38deg) scale(${isMobile ? 0.68 : 0.75})`;
               zIndex = 2;
               opacity = 0.55;
             }
