@@ -11,6 +11,8 @@ import {
   Radio,
   Music2,
   ShieldCheck,
+  Sun,
+  Moon,
 } from "lucide-react";
 
 const AVATAR_COLORS = [
@@ -44,6 +46,8 @@ export default function CreateJoinModal({
   isLoading,
   errorMessage,
   clearError,
+  theme = "dark",
+  onToggleTheme,
 }) {
   const [activeTab, setActiveTab] = useState(initialRoomId ? "join" : "create");
   const [username, setUsername] = useState(() => {
@@ -120,9 +124,33 @@ export default function CreateJoinModal({
       <div className="onboarding-container">
         {/* Brand Banner */}
         <div className="onboarding-brand">
-          <div className="brand-badge">
-            <Radio size={16} className="pulse-icon text-accent" />
-            <span>Live Social Listening</span>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", width: "100%", maxWidth: "520px", marginBottom: "0.5rem" }}>
+            <div className="brand-badge">
+              <Radio size={16} className="pulse-icon text-accent" />
+              <span>Live Social Listening</span>
+            </div>
+            {onToggleTheme && (
+              <button
+                type="button"
+                className="theme-toggle-btn"
+                onClick={onToggleTheme}
+                title={theme === "dark" ? "Switch to Light Mode" : "Switch to Dark Mode"}
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  width: "36px",
+                  height: "36px",
+                  borderRadius: "50%",
+                  backgroundColor: "var(--input-bg)",
+                  border: "2px solid var(--border-dark)",
+                  color: "var(--text-main)",
+                  cursor: "pointer",
+                }}
+              >
+                {theme === "dark" ? <Sun size={17} className="text-warning" /> : <Moon size={17} className="text-accent" />}
+              </button>
+            )}
           </div>
           <div className="brand-title-wrap">
             <div className="brand-logo-icon">
@@ -302,16 +330,10 @@ export default function CreateJoinModal({
               <button
                 type="submit"
                 className="submit-action-btn primary-glow"
-                disabled={isLoading || !username.trim() || !createRoomId.trim()}
+                disabled={!username.trim() || !createRoomId.trim()}
               >
-                {isLoading ? (
-                  <div className="spinner-sm"></div>
-                ) : (
-                  <>
-                    <span>Launch Room</span>
-                    <ArrowRight size={18} />
-                  </>
-                )}
+                <span>Launch Room</span>
+                <ArrowRight size={18} />
               </button>
             </form>
           ) : (
@@ -354,16 +376,10 @@ export default function CreateJoinModal({
               <button
                 type="submit"
                 className="submit-action-btn primary-glow"
-                disabled={isLoading || !username.trim() || !joinRoomId.trim()}
+                disabled={!username.trim() || !joinRoomId.trim()}
               >
-                {isLoading ? (
-                  <div className="spinner-sm"></div>
-                ) : (
-                  <>
-                    <span>Join Room</span>
-                    <ArrowRight size={18} />
-                  </>
-                )}
+                <span>Join Room</span>
+                <ArrowRight size={18} />
               </button>
             </form>
           )}

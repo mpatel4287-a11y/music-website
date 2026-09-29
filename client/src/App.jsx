@@ -632,7 +632,7 @@ export default function App() {
     [username, avatarColor, showToast]
   );
 
-  // Handle Join Room
+  // Handle Join Room (Instant 0ms entry - zero loading delay)
   const handleJoinRoom = useCallback(
     ({ roomId: targetRoomId, passcode: targetPasscode, username: uname, avatarColor: color }) => {
       const cleanRoom = (targetRoomId || "").trim().toLowerCase();
@@ -640,8 +640,37 @@ export default function App() {
       const cleanName = (uname || "").trim() || username || `Listener-${Math.floor(100 + Math.random() * 900)}`;
       const cleanColor = color || avatarColor || "#8b5cf6";
 
-      setIsAuthLoading(true);
+      // 1. Immediately transition to room without delay
+      setIsAuthLoading(false);
       setAuthError("");
+      setRoomId(cleanRoom);
+      setPasscode(cleanPass);
+      setUsername(cleanName);
+      setAvatarColor(cleanColor);
+      setInRoom(true);
+      setViewMode("lounge");
+      setIsCreateJoinModalOpen(false);
+
+      localStorage.setItem(
+        "musync_active_room",
+        JSON.stringify({
+          roomId: cleanRoom,
+          passcode: cleanPass,
+          username: cleanName,
+          avatarColor: cleanColor,
+        })
+      );
+
+      const newUrl = `${window.location.pathname}?room=${encodeURIComponent(cleanRoom)}${
+        cleanPass ? `&pass=${encodeURIComponent(cleanPass)}` : ""
+      }`;
+      window.history.pushState({}, "", newUrl);
+      showToast(`🎵 Entering Room "${cleanRoom}"...`, "info");
+
+      // 2. Synchronize with server in background
+      if (!socket.connected) {
+        try { socket.connect(); } catch (e) {}
+      }
 
       socket.emit(
         "join-room",
@@ -652,43 +681,14 @@ export default function App() {
           avatarColor: cleanColor,
         },
         (res) => {
-          setIsAuthLoading(false);
           if (res?.success) {
-            setRoomId(res.roomId);
-            setPasscode(cleanPass);
-            setUsername(cleanName);
-            setAvatarColor(cleanColor);
             setIsHost(Boolean(res.isAdmin));
-            setInRoom(true);
-            setViewMode("lounge");
-            setIsCreateJoinModalOpen(false);
-
-            localStorage.setItem(
-              "musync_active_room",
-              JSON.stringify({
-                roomId: res.roomId,
-                passcode: cleanPass,
-                username: cleanName,
-                avatarColor: cleanColor,
-              })
-            );
-
-            const newUrl = `${window.location.pathname}?room=${encodeURIComponent(res.roomId)}${
-              cleanPass ? `&pass=${encodeURIComponent(cleanPass)}` : ""
-            }`;
-            window.history.pushState({}, "", newUrl);
             showToast(`🎵 Connected to Room "${res.roomId}"!`, "success");
-          } else {
-            setAuthError(res?.message || "Failed to join room.");
-            setInitialUrlRoomId(cleanRoom);
+          } else if (res?.roomNotFound) {
+            showToast(`⚠️ Room "${cleanRoom}" does not exist.`, "error");
+          } else if (res?.requiresPasscode) {
+            showToast(`🔒 Passcode required for "${cleanRoom}".`, "warning");
             setIsCreateJoinModalOpen(true);
-            if (res?.roomNotFound) {
-              showToast(`⚠️ Room "${cleanRoom}" does not exist.`, "error");
-            } else if (res?.requiresPasscode) {
-              showToast(`🔒 Incorrect or missing passcode for "${cleanRoom}".`, "warning");
-            } else {
-              showToast(`⚠️ ${res?.message || "Failed to join room."}`, "error");
-            }
           }
         }
       );
@@ -1339,6 +1339,8 @@ function performClientSearchFallback(query) {
           errorMessage={authError}
           clearError={() => setAuthError("")}
           onClose={() => setIsCreateJoinModalOpen(false)}
+          theme={theme}
+          onToggleTheme={handleToggleTheme}
         />
       )}
 
