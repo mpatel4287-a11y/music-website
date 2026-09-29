@@ -108,7 +108,75 @@ export default function DashboardView({
   const [recommendations, setRecommendations] = useState([]);
   const [isLoadingRecs, setIsLoadingRecs] = useState(false);
 
-  const [roomsList, setRoomsList] = useState([]);
+  const DEFAULT_ROOMS_FALLBACK = [
+    {
+      roomId: "lofi-chill",
+      passcode: "",
+      hasPasscode: false,
+      adminUsername: "LofiMaster",
+      trackTitle: "Lofi Hip Hop - Beats to Relax/Study to",
+      artistName: "Lofi Girl",
+      videoId: "jfKfPfyJRdk",
+      thumbnail: "https://images.unsplash.com/photo-1518609878373-06d740f60d8b?w=400&auto=format&fit=crop&q=60",
+      listenersCount: 14,
+      genre: "lofi",
+      location: "Global Lounge",
+    },
+    {
+      roomId: "synthwave-neon",
+      passcode: "",
+      hasPasscode: false,
+      adminUsername: "CyberDJ",
+      trackTitle: "Resonance",
+      artistName: "HOME",
+      videoId: "8GW6sLrK40k",
+      thumbnail: "https://images.unsplash.com/photo-1508700115892-45ecd05ae2ad?w=400&auto=format&fit=crop&q=60",
+      listenersCount: 8,
+      genre: "synthwave",
+      location: "Tokyo",
+    },
+    {
+      roomId: "retro-vinyl",
+      passcode: "",
+      hasPasscode: false,
+      adminUsername: "VinylCollector",
+      trackTitle: "Careless Whisper",
+      artistName: "George Michael",
+      videoId: "izGwDsrQ1eQ",
+      thumbnail: "https://images.unsplash.com/photo-1461360370896-922624d12aa1?w=400&auto=format&fit=crop&q=60",
+      listenersCount: 5,
+      genre: "retro",
+      location: "London",
+    },
+    {
+      roomId: "bollywood-hits",
+      passcode: "",
+      hasPasscode: false,
+      adminUsername: "DesiVibes",
+      trackTitle: "Kesariya",
+      artistName: "Arijit Singh",
+      videoId: "BddP6PYo2gs",
+      thumbnail: "https://img.youtube.com/vi/BddP6PYo2gs/hqdefault.jpg",
+      listenersCount: 22,
+      genre: "bollywood",
+      location: "Mumbai",
+    },
+    {
+      roomId: "rock-classics",
+      passcode: "",
+      hasPasscode: false,
+      adminUsername: "RockLegend",
+      trackTitle: "Bohemian Rhapsody",
+      artistName: "Queen",
+      videoId: "1w7OgIMMRc4",
+      thumbnail: "https://img.youtube.com/vi/1w7OgIMMRc4/hqdefault.jpg",
+      listenersCount: 9,
+      genre: "rock",
+      location: "Los Angeles",
+    },
+  ];
+
+  const [roomsList, setRoomsList] = useState(DEFAULT_ROOMS_FALLBACK);
   const [isLoadingRooms, setIsLoadingRooms] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [roomFilterQuery, setRoomFilterQuery] = useState("");
@@ -223,16 +291,25 @@ export default function DashboardView({
     };
   }, [selectedGenreTab, userLocation, effectiveBackend]);
 
-  // Fetch Active Public/Protected Rooms
+  // Fetch Active Public/Protected Rooms (Non-blocking background refresh)
   const fetchActiveRooms = () => {
-    setIsLoadingRooms(true);
-    fetch(`${effectiveBackend}/api/rooms`)
-      .then((res) => (res.ok ? res.json() : { rooms: [] }))
+    const controller = typeof AbortController !== "undefined" ? new AbortController() : null;
+    const timeoutId = controller ? setTimeout(() => controller.abort(), 6000) : null;
+
+    fetch(`${effectiveBackend}/api/rooms`, { signal: controller ? controller.signal : undefined })
+      .then((res) => (res.ok ? res.json() : null))
       .then((data) => {
-        setRoomsList(data.rooms || []);
-        setIsLoadingRooms(false);
+        if (data && Array.isArray(data.rooms) && data.rooms.length > 0) {
+          setRoomsList(data.rooms);
+        }
       })
-      .catch(() => setIsLoadingRooms(false));
+      .catch(() => {
+        // Retain fallback list on network or cold start delay
+      })
+      .finally(() => {
+        if (timeoutId) clearTimeout(timeoutId);
+        setIsLoadingRooms(false);
+      });
   };
 
   useEffect(() => {

@@ -13,6 +13,7 @@ import {
   ShieldCheck,
   Sun,
   Moon,
+  X,
 } from "lucide-react";
 
 const AVATAR_COLORS = [
@@ -43,6 +44,7 @@ export default function CreateJoinModal({
   initialPasscode = "",
   onCreateRoom,
   onJoinRoom,
+  onClose,
   isLoading,
   errorMessage,
   clearError,
@@ -117,8 +119,25 @@ export default function CreateJoinModal({
     });
   };
 
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.key === "Escape" && onClose) {
+        onClose();
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [onClose]);
+
   return (
-    <div className="onboarding-overlay">
+    <div
+      className="onboarding-overlay"
+      onClick={(e) => {
+        if (e.target === e.currentTarget && onClose) {
+          onClose();
+        }
+      }}
+    >
       <div className="onboarding-backdrop-glow"></div>
 
       <div className="onboarding-container">
@@ -129,28 +148,52 @@ export default function CreateJoinModal({
               <Radio size={16} className="pulse-icon text-accent" />
               <span>Live Social Listening</span>
             </div>
-            {onToggleTheme && (
-              <button
-                type="button"
-                className="theme-toggle-btn"
-                onClick={onToggleTheme}
-                title={theme === "dark" ? "Switch to Light Mode" : "Switch to Dark Mode"}
-                style={{
-                  display: "inline-flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  width: "36px",
-                  height: "36px",
-                  borderRadius: "50%",
-                  backgroundColor: "var(--input-bg)",
-                  border: "2px solid var(--border-dark)",
-                  color: "var(--text-main)",
-                  cursor: "pointer",
-                }}
-              >
-                {theme === "dark" ? <Sun size={17} className="text-warning" /> : <Moon size={17} className="text-accent" />}
-              </button>
-            )}
+            <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+              {onToggleTheme && (
+                <button
+                  type="button"
+                  className="theme-toggle-btn"
+                  onClick={onToggleTheme}
+                  title={theme === "dark" ? "Switch to Light Mode" : "Switch to Dark Mode"}
+                  style={{
+                    display: "inline-flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    width: "36px",
+                    height: "36px",
+                    borderRadius: "50%",
+                    backgroundColor: "var(--input-bg)",
+                    border: "2px solid var(--border-dark)",
+                    color: "var(--text-main)",
+                    cursor: "pointer",
+                  }}
+                >
+                  {theme === "dark" ? <Sun size={17} className="text-warning" /> : <Moon size={17} className="text-accent" />}
+                </button>
+              )}
+              {onClose && (
+                <button
+                  type="button"
+                  className="theme-toggle-btn"
+                  onClick={onClose}
+                  title="Close modal"
+                  style={{
+                    display: "inline-flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    width: "36px",
+                    height: "36px",
+                    borderRadius: "50%",
+                    backgroundColor: "var(--input-bg)",
+                    border: "2px solid var(--border-dark)",
+                    color: "var(--text-main)",
+                    cursor: "pointer",
+                  }}
+                >
+                  <X size={17} />
+                </button>
+              )}
+            </div>
           </div>
           <div className="brand-title-wrap">
             <div className="brand-logo-icon">
