@@ -3989,6 +3989,25 @@ input:checked + .slider:before {
   gap: 3px;
 }
 
+.access-tag.active-room {
+  background: rgba(139, 92, 246, 0.2);
+  color: #c084fc;
+  border: 1px solid rgba(139, 92, 246, 0.6);
+  font-size: 0.68rem;
+  font-weight: 700;
+  padding: 2px 7px;
+  border-radius: 9999px;
+  display: flex;
+  align-items: center;
+  gap: 3px;
+}
+
+.btn-return-active-room {
+  background: linear-gradient(135deg, #8b5cf6, #6366f1) !important;
+  color: #ffffff !important;
+  box-shadow: 0 4px 14px rgba(139, 92, 246, 0.35) !important;
+}
+
 .room-track-preview {
   display: flex;
   align-items: center;

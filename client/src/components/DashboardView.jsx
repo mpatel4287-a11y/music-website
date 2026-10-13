@@ -90,6 +90,8 @@ const getEffectiveBackendUrl = (url) => {
 };
 
 export default function DashboardView({
+  socket,
+  roomState,
   username,
   avatarColor,
   onCreateRoom,
@@ -109,32 +111,56 @@ export default function DashboardView({
   );
   const [isLoadingRecs, setIsLoadingRecs] = useState(false);
 
-  const [roomsList, setRoomsList] = useState(() => [
-    {
-      roomId: "global_lofi",
-      location: "Global Lounge",
-      genre: "Lo-Fi & Chill",
-      hasPasscode: false,
-      listenersCount: 2,
-      adminUsername: "Musync Bot 🎵",
-      trackTitle: "death bed (coffee for your head)",
-      artistName: "Powfu",
-      thumbnail: "https://img.youtube.com/vi/jJPMnTXl63E/hqdefault.jpg",
-      isPlaying: true,
-    },
-    {
-      roomId: "trending_india",
-      location: "Bengaluru, India",
-      genre: "Trending Hits",
-      hasPasscode: false,
-      listenersCount: 2,
-      adminUsername: "SonicWave",
-      trackTitle: "Kesariya",
-      artistName: "Arijit Singh",
-      thumbnail: "https://img.youtube.com/vi/BddP6PYo2gs/hqdefault.jpg",
-      isPlaying: true,
-    },
-  ]);
+  const [roomsList, setRoomsList] = useState(() => {
+    const defaultList = [
+      {
+        roomId: "global_lofi",
+        location: "Global Lounge",
+        genre: "Lo-Fi & Chill",
+        hasPasscode: false,
+        listenersCount: 2,
+        adminUsername: "Musync Bot 🎵",
+        trackTitle: "death bed (coffee for your head)",
+        artistName: "Powfu",
+        thumbnail: "https://img.youtube.com/vi/jJPMnTXl63E/hqdefault.jpg",
+        isPlaying: true,
+      },
+      {
+        roomId: "trending_india",
+        location: "Bengaluru, India",
+        genre: "Trending Hits",
+        hasPasscode: false,
+        listenersCount: 2,
+        adminUsername: "SonicWave",
+        trackTitle: "Kesariya",
+        artistName: "Arijit Singh",
+        thumbnail: "https://img.youtube.com/vi/BddP6PYo2gs/hqdefault.jpg",
+        isPlaying: true,
+      },
+    ];
+
+    if (inRoom && currentRoomId) {
+      return [
+        {
+          roomId: currentRoomId,
+          location: "Your Lounge",
+          genre: "Live Session",
+          hasPasscode: Boolean(roomState?.hasPasscode),
+          listenersCount: roomState?.users ? roomState.users.length : 1,
+          adminUsername: username || "You",
+          trackTitle: roomState?.trackTitle || "Lofi Chill Beats",
+          artistName: roomState?.artistName || "Lofi Girl",
+          thumbnail:
+            roomState?.thumbnail ||
+            "https://images.unsplash.com/photo-1518609878373-06d740f60d8b?w=400&auto=format&fit=crop&q=60",
+          isPlaying: Boolean(roomState?.isPlaying),
+          isCurrentActiveRoom: true,
+        },
+        ...defaultList,
+      ];
+    }
+    return defaultList;
+  });
   const [isLoadingRooms, setIsLoadingRooms] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
 
@@ -248,23 +274,123 @@ export default function DashboardView({
     };
   }, [selectedGenreTab, userLocation, effectiveBackend]);
 
+  // Helper to merge active room and cached rooms into room list so newly created rooms ALWAYS appear
+  const mergeRoomsWithLocal = (rawRooms) => {
+    let list = Array.isArray(rawRooms) ? [...rawRooms] : [];
+
+    // 1. If currently in a room, ensure it is pinned at top with active badge
+    if (inRoom && currentRoomId) {
+      const existingIdx = list.findIndex(
+        (r) => r.roomId.toLowerCase() === currentRoomId.toLowerCase()
+      );
+      const activeRoomObj = {
+        roomId: currentRoomId,
+        location:
+          userLocation?.city
+            ? `${userLocation.city}${userLocation.country ? `, ${userLocation.country}` : ""}`
+            : "Your Lounge",
+        genre: "Live Session",
+        hasPasscode: Boolean(roomState?.hasPasscode),
+        listenersCount: roomState?.users
+          ? roomState.users.filter((u) => !u.isDisconnected).length
+          : 1,
+        adminUsername:
+          roomState?.users?.find((u) => u.isAdmin)?.username || username || "You",
+        trackTitle: roomState?.trackTitle || "Lofi Chill Beats",
+        artistName: roomState?.artistName || "Lofi Girl",
+        thumbnail:
+          roomState?.thumbnail ||
+          "https://images.unsplash.com/photo-1518609878373-06d740f60d8b?w=400&auto=format&fit=crop&q=60",
+        isPlaying: Boolean(roomState?.isPlaying),
+        isCurrentActiveRoom: true,
+      };
+
+      if (existingIdx >= 0) {
+        list[existingIdx] = {
+          ...list[existingIdx],
+          ...activeRoomObj,
+          listenersCount: Math.max(
+            list[existingIdx].listenersCount || 0,
+            activeRoomObj.listenersCount
+          ),
+        };
+      } else {
+        list.unshift(activeRoomObj);
+      }
+    }
+
+    // 2. Also check localStorage for recently created rooms
+    try {
+      const savedCreated = JSON.parse(localStorage.getItem("musync_created_rooms") || "[]");
+      savedCreated.forEach((cr) => {
+        if (!cr || !cr.roomId) return;
+        const exists = list.some(
+          (r) => r.roomId.toLowerCase() === cr.roomId.toLowerCase()
+        );
+        if (!exists) {
+          list.push({
+            roomId: cr.roomId,
+            location: "Your Lounge",
+            genre: "Created Lounge",
+            hasPasscode: Boolean(cr.hasPasscode),
+            listenersCount: 1,
+            adminUsername: cr.adminUsername || username || "Host",
+            trackTitle: cr.trackTitle || "Lofi Chill Beats",
+            artistName: cr.artistName || "Lofi Girl",
+            thumbnail:
+              cr.thumbnail ||
+              "https://images.unsplash.com/photo-1518609878373-06d740f60d8b?w=400&auto=format&fit=crop&q=60",
+            isPlaying: false,
+            isCreatedByMe: true,
+          });
+        }
+      });
+    } catch (e) {}
+
+    return list;
+  };
+
+  // Real-time socket updates for instant room sync across all clients
+  useEffect(() => {
+    if (!socket) return;
+
+    const handleRoomsUpdated = (incomingRooms) => {
+      if (Array.isArray(incomingRooms)) {
+        setRoomsList(mergeRoomsWithLocal(incomingRooms));
+        setIsLoadingRooms(false);
+      }
+    };
+
+    socket.on("rooms-updated", handleRoomsUpdated);
+    socket.emit("get-rooms", (res) => {
+      if (Array.isArray(res)) handleRoomsUpdated(res);
+    });
+
+    return () => {
+      socket.off("rooms-updated", handleRoomsUpdated);
+    };
+  }, [socket, inRoom, currentRoomId, roomState, username, userLocation]);
+
   // Fetch Active Public/Protected Rooms
   const fetchActiveRooms = () => {
     setIsLoadingRooms(true);
     fetch(`${effectiveBackend}/api/rooms`)
       .then((res) => (res.ok ? res.json() : { rooms: [] }))
       .then((data) => {
-        setRoomsList(data.rooms || []);
+        setRoomsList(mergeRoomsWithLocal(data.rooms || []));
         setIsLoadingRooms(false);
       })
-      .catch(() => setIsLoadingRooms(false));
+      .catch(() => {
+        setRoomsList((prev) => mergeRoomsWithLocal(prev));
+        setIsLoadingRooms(false);
+      });
   };
 
   useEffect(() => {
     fetchActiveRooms();
-    const interval = setInterval(fetchActiveRooms, 8000);
+    const interval = setInterval(fetchActiveRooms, 6000);
     return () => clearInterval(interval);
-  }, [effectiveBackend]);
+  }, [effectiveBackend, inRoom, currentRoomId, roomState]);
 
   const [songSearchResults, setSongSearchResults] = useState([]);
   const [isSearchingSongs, setIsSearchingSongs] = useState(false);
@@ -669,6 +795,15 @@ export default function DashboardView({
                     <span className="location-pill-tag">
                       <MapPin size={11} /> {room.location || "Global"}
                     </span>
+                    {room.isCurrentActiveRoom ? (
+                      <span className="access-tag active-room">
+                        <Sparkles size={11} /> Your Active Room
+                      </span>
+                    ) : room.isCreatedByMe ? (
+                      <span className="access-tag active-room">
+                        👑 Created By You
+                      </span>
+                    ) : null}
                     {room.hasPasscode ? (
                       <span className="access-tag protected">
                         <Lock size={11} /> Passcode
@@ -705,10 +840,16 @@ export default function DashboardView({
 
                   <button
                     type="button"
-                    className="btn-join-room"
-                    onClick={() => onJoinRoom(room.roomId, room.hasPasscode)}
+                    className={`btn-join-room ${room.isCurrentActiveRoom ? "btn-return-active-room" : ""}`}
+                    onClick={() => {
+                      if (room.isCurrentActiveRoom && onReturnToLounge) {
+                        onReturnToLounge();
+                      } else {
+                        onJoinRoom(room.roomId, room.hasPasscode);
+                      }
+                    }}
                   >
-                    <span>Join Room</span>
+                    <span>{room.isCurrentActiveRoom ? "Return to Lounge" : "Join Room"}</span>
                     <ArrowRight size={14} />
                   </button>
                 </div>

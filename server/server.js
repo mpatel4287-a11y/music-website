@@ -366,23 +366,40 @@ app.post("/api/auth/reset-password", async (req, res) => {
 });
 
 
+// 4. Helper function to format active and recent rooms list
+function getRoomsList() {
+  if (typeof rooms === "undefined" || !rooms) return [];
+  return Object.values(rooms)
+    .filter((r) => r && r.roomId)
+    .map((r) => ({
+      roomId: r.roomId,
+      location: r.location || "Global Lounge",
+      genre: r.genre || "Lofi & Chill",
+      hasPasscode: Boolean(r.passcode && r.passcode.trim().length > 0),
+      listenersCount: r.users ? r.users.filter((u) => !u.isDisconnected).length : 0,
+      adminUsername: r.adminUsername || "Musync Host",
+      trackTitle: r.trackTitle || "Lofi Chill Beats",
+      artistName: r.artistName || "Lofi Girl",
+      thumbnail: r.thumbnail || "https://images.unsplash.com/photo-1518609878373-06d740f60d8b?w=400&auto=format&fit=crop&q=60",
+      isPlaying: Boolean(r.isPlaying),
+      createdAt: r.createdAt || Date.now(),
+    }));
+}
+
+function broadcastRoomsList() {
+  try {
+    const list = getRoomsList();
+    io.emit("rooms-updated", list);
+  } catch (err) {
+    console.error("Error broadcasting rooms list:", err?.message || err);
+  }
+}
+
 // 4. Get Active Public & Protected Rooms with Location Meta
 app.get("/api/rooms", (req, res) => {
-  const activeRoomsList = Object.values(rooms).map((r) => ({
-    roomId: r.roomId,
-    location: r.location || "Global Lounge",
-    genre: r.genre || "Lofi & Chill",
-    hasPasscode: Boolean(r.passcode && r.passcode.trim().length > 0),
-    listenersCount: r.users ? r.users.length : 0,
-    adminUsername: r.adminUsername,
-    trackTitle: r.trackTitle,
-    artistName: r.artistName,
-    thumbnail: r.thumbnail,
-    isPlaying: r.isPlaying,
-  }));
-
-  res.json({ rooms: activeRoomsList });
+  res.json({ rooms: getRoomsList() });
 });
+
 
 // Specific single song queries per category to guarantee single tracks (2-5 mins)
 const SINGLE_SONG_QUERIES = {
@@ -956,6 +973,18 @@ setInterval(() => {
 }, 1000);
 
 io.on("connection", (socket) => {
+  // Send current rooms list immediately on socket connection
+  socket.emit("rooms-updated", getRoomsList());
+
+  socket.on("get-rooms", (callback) => {
+    const list = getRoomsList();
+    if (typeof callback === "function") {
+      callback(list);
+    } else {
+      socket.emit("rooms-updated", list);
+    }
+  });
+
   // Pre-flight room existence and passcode check
   socket.on("validate-room", ({ roomId }, callback) => {
     const cleanRoomId = (roomId || "").trim().toLowerCase();
@@ -977,7 +1006,7 @@ io.on("connection", (socket) => {
   });
 
   // 1. Create Room
-  socket.on("create-room", ({ roomId, passcode, username, avatarColor }, callback) => {
+  socket.on("create-room", ({ roomId, passcode, username, avatarColor, location, genre, trackTitle, artistName, thumbnail, videoId, durationSec }, callback) => {
     const cleanRoomId = (roomId || "").trim().toLowerCase();
     const cleanUsername = (username || "").trim() || `DJ-${Math.floor(1000 + Math.random() * 9000)}`;
 
@@ -1014,6 +1043,7 @@ io.on("connection", (socket) => {
         });
       }
       broadcastRoomSync(cleanRoomId);
+      broadcastRoomsList();
       return;
     }
 
@@ -1023,14 +1053,18 @@ io.on("connection", (socket) => {
       passcode: (passcode || "").trim(),
       adminSocketId: socket.id,
       adminUsername: cleanUsername,
-      videoId: "jfKfPfyJRdk",
+      location: location || "Global Lounge",
+      genre: genre || "Trending Hits",
+      videoId: videoId || "jfKfPfyJRdk",
       isPlaying: false,
       currentTime: 0,
       lastUpdated: Date.now(),
-      trackTitle: "Lofi Chill Beats",
-      artistName: "Lofi Girl",
-      thumbnail: "https://images.unsplash.com/photo-1518609878373-06d740f60d8b?w=500&auto=format&fit=crop&q=60",
-      durationSec: 180,
+      lastActive: Date.now(),
+      createdAt: Date.now(),
+      trackTitle: trackTitle || "Lofi Chill Beats",
+      artistName: artistName || "Lofi Girl",
+      thumbnail: thumbnail || "https://images.unsplash.com/photo-1518609878373-06d740f60d8b?w=500&auto=format&fit=crop&q=60",
+      durationSec: durationSec || 180,
       users: [
         {
           socketId: socket.id,
@@ -1066,6 +1100,7 @@ io.on("connection", (socket) => {
     }
 
     broadcastRoomSync(cleanRoomId);
+    broadcastRoomsList();
   });
 
   // 2. Join Room (Auto-creates room if not present so users never get stuck)
@@ -1223,7 +1258,9 @@ io.on("connection", (socket) => {
       socketId: socket.id,
     });
 
+    room.lastActive = Date.now();
     broadcastRoomSync(cleanRoomId);
+    broadcastRoomsList();
   });
 
   // 3. Playback State Synchronization
@@ -1276,7 +1313,11 @@ io.on("connection", (socket) => {
       io.to(roomId).emit("new-chat-message", trackMsg);
     }
 
+    room.lastActive = Date.now();
     broadcastRoomSync(roomId);
+    if (type === "CHANGE_TRACK" || type === "PLAY" || type === "PAUSE") {
+      broadcastRoomsList();
+    }
   });
 
   // Host playback timestamp heartbeat
@@ -1766,14 +1807,11 @@ io.on("connection", (socket) => {
         socket.leave(cleanRoomId);
         socket.roomId = null;
 
-        // If room is empty, delete custom room or reset default room
+        // If room is empty, preserve custom room so it remains listed on the Dashboard for other users to join!
         if (room.users.length === 0) {
-          if (defaultRooms[cleanRoomId]) {
-            rooms[cleanRoomId] = JSON.parse(JSON.stringify(defaultRooms[cleanRoomId]));
-            rooms[cleanRoomId].mutedSocketIds = new Set();
-          } else {
-            delete rooms[cleanRoomId];
-          }
+          room.lastActive = Date.now();
+          room.isPlaying = false;
+          broadcastRoomsList();
           return;
         }
 
@@ -1801,6 +1839,7 @@ io.on("connection", (socket) => {
         io.to(cleanRoomId).emit("new-chat-message", leaveMsg);
 
         broadcastRoomSync(cleanRoomId);
+        broadcastRoomsList();
       });
 
       // 17. Disconnect Handling (With 25-Second Grace Period for Mobile Backgrounding)
@@ -1829,14 +1868,11 @@ io.on("connection", (socket) => {
               rooms[roomId].mutedSocketIds.delete(socketId);
             }
 
-            // If room is empty, delete custom room or reset default room
+            // If room is empty, preserve it so it remains visible on Dashboard for discovery
             if (rooms[roomId].users.length === 0) {
-              if (defaultRooms[roomId]) {
-                rooms[roomId] = JSON.parse(JSON.stringify(defaultRooms[roomId]));
-                rooms[roomId].mutedSocketIds = new Set();
-              } else {
-                delete rooms[roomId];
-              }
+              rooms[roomId].lastActive = Date.now();
+              rooms[roomId].isPlaying = false;
+              broadcastRoomsList();
               return;
             }
 
@@ -1864,10 +1900,35 @@ io.on("connection", (socket) => {
             io.to(roomId).emit("new-chat-message", sysMsg);
 
             broadcastRoomSync(roomId);
+            broadcastRoomsList();
           }, 25000); // 25s background grace period
         }
       });
     });
+
+// 18. Periodic cleanup for inactive custom rooms (retention: 3 hours)
+const THREE_HOURS_MS = 3 * 60 * 60 * 1000;
+setInterval(() => {
+  try {
+    const now = Date.now();
+    let hasChanged = false;
+    for (const id in rooms) {
+      if (!defaultRooms[id]) {
+        const r = rooms[id];
+        if ((!r.users || r.users.length === 0) && r.lastActive && (now - r.lastActive > THREE_HOURS_MS)) {
+          delete rooms[id];
+          hasChanged = true;
+        }
+      }
+    }
+    if (hasChanged) {
+      broadcastRoomsList();
+    }
+  } catch (err) {
+    console.error("Room retention cleanup error:", err?.message || err);
+  }
+}, 60000);
+
 
 const PORT = process.env.PORT || 5000;
 server.listen(PORT, "0.0.0.0", () => {

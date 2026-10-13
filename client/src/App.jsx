@@ -601,11 +601,27 @@ export default function App() {
 
   // Handle Create Room (Instant 0ms entry - zero loading delay)
   const handleCreateRoom = useCallback(
-    ({ roomId: newRoomId, passcode: newPasscode, username: uname, avatarColor: color }) => {
+    ({
+      roomId: newRoomId,
+      passcode: newPasscode,
+      username: uname,
+      avatarColor: color,
+      trackTitle: customTrackTitle,
+      artistName: customArtistName,
+      thumbnail: customThumbnail,
+      videoId: customVideoId,
+      durationSec: customDuration,
+    }) => {
       const cleanRoom = (newRoomId || "").trim().toLowerCase();
       const cleanPass = (newPasscode || "").trim();
       const cleanName = (uname || "").trim() || username || `DJ-${Math.floor(1000 + Math.random() * 9000)}`;
       const cleanColor = color || avatarColor || "#8b5cf6";
+
+      const initialTitle = customTrackTitle || "Lofi Chill Beats";
+      const initialArtist = customArtistName || "Lofi Girl";
+      const initialThumb = customThumbnail || "https://images.unsplash.com/photo-1518609878373-06d740f60d8b?w=500&auto=format&fit=crop&q=60";
+      const initialVid = customVideoId || "jfKfPfyJRdk";
+      const initialDur = customDuration || 180;
 
       // 1. Immediately transition to room without delay
       setIsAuthLoading(false);
@@ -623,12 +639,13 @@ export default function App() {
       // Seed immediate optimistic roomState so player and lounge never show a blank or loading state
       setRoomState({
         roomId: cleanRoom,
-        trackTitle: "Lofi Chill Beats",
-        artistName: "Lofi Girl",
-        videoId: "jfKfPfyJRdk",
-        thumbnail: "https://images.unsplash.com/photo-1518609878373-06d740f60d8b?w=500&auto=format&fit=crop&q=60",
-        isPlaying: false,
+        trackTitle: initialTitle,
+        artistName: initialArtist,
+        videoId: initialVid,
+        thumbnail: initialThumb,
+        isPlaying: Boolean(customVideoId),
         currentTime: 0,
+        durationSec: initialDur,
         users: [{ socketId: socket.id || "host", username: cleanName, isAdmin: true, isMainHost: true, avatarColor: cleanColor }],
         queue: [],
         requests: [],
@@ -648,6 +665,24 @@ export default function App() {
         })
       );
 
+      try {
+        const existingCreated = JSON.parse(localStorage.getItem("musync_created_rooms") || "[]");
+        const updatedCreated = [
+          {
+            roomId: cleanRoom,
+            passcode: cleanPass,
+            hasPasscode: Boolean(cleanPass),
+            adminUsername: cleanName,
+            trackTitle: initialTitle,
+            artistName: initialArtist,
+            thumbnail: initialThumb,
+            createdAt: Date.now(),
+          },
+          ...existingCreated.filter((r) => r.roomId !== cleanRoom),
+        ].slice(0, 10);
+        localStorage.setItem("musync_created_rooms", JSON.stringify(updatedCreated));
+      } catch (e) {}
+
       const newUrl = `${window.location.pathname}?room=${encodeURIComponent(cleanRoom)}${
         cleanPass ? `&pass=${encodeURIComponent(cleanPass)}` : ""
       }`;
@@ -659,11 +694,26 @@ export default function App() {
         try { socket.connect(); } catch (e) {}
       }
 
+      let userCity = "Global Lounge";
+      try {
+        const cached = JSON.parse(localStorage.getItem("musync_location") || "null");
+        if (cached && cached.city) {
+          userCity = cached.country ? `${cached.city}, ${cached.country}` : cached.city;
+        }
+      } catch (e) {}
+
       socket.emit("create-room", {
         roomId: cleanRoom,
         passcode: cleanPass,
         username: cleanName,
         avatarColor: cleanColor,
+        location: userCity,
+        genre: "Trending Hits",
+        trackTitle: initialTitle,
+        artistName: initialArtist,
+        thumbnail: initialThumb,
+        videoId: initialVid,
+        durationSec: initialDur,
       });
     },
     [username, avatarColor, showToast]
@@ -1393,6 +1443,11 @@ function performClientSearchFallback(query) {
       passcode: "",
       username: myName,
       avatarColor: myColor,
+      trackTitle: song.title,
+      artistName: song.artist,
+      thumbnail: song.thumbnail,
+      videoId: song.videoId,
+      durationSec: song.seconds || 180,
     });
 
     setRoomState((prev) => ({
@@ -1524,6 +1579,8 @@ function performClientSearchFallback(query) {
       {/* View Switcher: Dashboard View vs Lounge View */}
       {viewMode === "dashboard" || !inRoom ? (
         <DashboardView
+          socket={socket}
+          roomState={roomState}
           username={username}
           avatarColor={avatarColor}
           onCreateRoom={() => setIsCreateJoinModalOpen(true)}
