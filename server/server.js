@@ -767,13 +767,16 @@ function ensureDefaultRoom(cleanRoomId) {
 }
 
 // Helper to check if socket or user is the room host/admin or co-host (with socket reconnect auto-repair)
-function isUserAdmin(room, socket) {
+function isUserAdmin(room, socket, usernameFromPayload) {
   if (!room || !socket) return false;
+
+  // 0. If 1 or fewer users in room, the sole active user is always authorized
+  if (!room.users || room.users.length <= 1) return true;
 
   // 1. Direct socket ID match
   if (room.adminSocketId === socket.id) return true;
 
-  const sockName = socket.username ? socket.username.trim().toLowerCase() : "";
+  const sockName = (usernameFromPayload || socket.username || "").trim().toLowerCase();
 
   // 2. Main Admin Username match (case-insensitive)
   if (
@@ -782,6 +785,9 @@ function isUserAdmin(room, socket) {
     room.adminUsername.trim().toLowerCase() === sockName
   ) {
     room.adminSocketId = socket.id;
+    if (socket.username !== room.adminUsername) {
+      socket.username = room.adminUsername;
+    }
     if (room.users) {
       const u = room.users.find(
         (user) =>
@@ -1222,12 +1228,16 @@ io.on("connection", (socket) => {
 
   // 3. Playback State Synchronization
   socket.on("action", (data) => {
-    const { roomId, type, value, trackTitle, artistName, thumbnail, durationSec } = data;
+    const { roomId, type, value, trackTitle, artistName, thumbnail, durationSec, username } = data || {};
     const room = rooms[roomId];
     if (!room) return;
 
+    if (username && !socket.username) {
+      socket.username = username;
+    }
+
     // Strict Admin authorization check for playback control if more than 1 user
-    if (room.users.length > 1 && !isUserAdmin(room, socket)) {
+    if (room.users && room.users.length > 1 && !isUserAdmin(room, socket, username)) {
       socket.emit("notification", {
         type: "warning",
         message: "Only the Room Host can control playback.",
@@ -1311,11 +1321,15 @@ io.on("connection", (socket) => {
   });
 
   // 5. Admin Accepts Song Request
-  socket.on("accept-request", ({ roomId, requestId, playImmediately }) => {
+  socket.on("accept-request", ({ roomId, requestId, playImmediately, username }) => {
     const room = rooms[roomId];
     if (!room) return;
 
-    if (!isUserAdmin(room, socket)) {
+    if (username && !socket.username) {
+      socket.username = username;
+    }
+
+    if (room.users && room.users.length > 1 && !isUserAdmin(room, socket, username)) {
       socket.emit("notification", {
         type: "error",
         message: "Only the Room Host can approve song requests.",
@@ -1364,11 +1378,15 @@ io.on("connection", (socket) => {
   });
 
   // 6. Admin Rejects Song Request
-  socket.on("reject-request", ({ roomId, requestId }) => {
+  socket.on("reject-request", ({ roomId, requestId, username }) => {
     const room = rooms[roomId];
     if (!room) return;
 
-    if (!isUserAdmin(room, socket)) {
+    if (username && !socket.username) {
+      socket.username = username;
+    }
+
+    if (room.users && room.users.length > 1 && !isUserAdmin(room, socket, username)) {
       socket.emit("notification", {
         type: "error",
         message: "Only the Room Host can manage song requests.",
@@ -1405,11 +1423,15 @@ io.on("connection", (socket) => {
   });
 
   // 8. Remove from Queue
-  socket.on("remove-from-queue", ({ roomId, queueItemId }) => {
+  socket.on("remove-from-queue", ({ roomId, queueItemId, username }) => {
     const room = rooms[roomId];
     if (!room) return;
 
-    if (!isUserAdmin(room, socket)) {
+    if (username && !socket.username) {
+      socket.username = username;
+    }
+
+    if (room.users && room.users.length > 1 && !isUserAdmin(room, socket, username)) {
       socket.emit("notification", {
         type: "error",
         message: "Only the Room Host can remove items from queue.",
@@ -1422,11 +1444,15 @@ io.on("connection", (socket) => {
   });
 
   // 9. Skip to Next Song in Queue (or skip track)
-  socket.on("skip-track", ({ roomId, queueItemId }) => {
+  socket.on("skip-track", ({ roomId, queueItemId, username }) => {
     const room = rooms[roomId];
     if (!room) return;
 
-    if (!isUserAdmin(room, socket)) {
+    if (username && !socket.username) {
+      socket.username = username;
+    }
+
+    if (room.users && room.users.length > 1 && !isUserAdmin(room, socket, username)) {
       socket.emit("notification", {
         type: "warning",
         message: "Only the Room Host can skip tracks.",

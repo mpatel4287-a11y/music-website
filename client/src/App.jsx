@@ -127,6 +127,7 @@ export default function App() {
   const lastHostSyncEmitRef = useRef(0);
   const lastAutoSeekRef = useRef(0);
   const searchCacheRef = useRef({});
+  const currentLoadedVideoIdRef = useRef("");
 
   const usernameRef = useRef(username);
   const avatarColorRef = useRef(avatarColor);
@@ -427,26 +428,36 @@ export default function App() {
       if (playerRef.current) {
         const player = playerRef.current;
         try {
-          const currentUrl = typeof player.getVideoUrl === "function" ? player.getVideoUrl() || "" : "";
-          const localTime = typeof player.getCurrentTime === "function" ? player.getCurrentTime() || 0 : 0;
-
-          if (state.videoId && !currentUrl.includes(state.videoId)) {
+          // A. Only load track if videoId actually changed (prevents reload loop every 1s)
+          if (state.videoId && state.videoId !== currentLoadedVideoIdRef.current) {
+            currentLoadedVideoIdRef.current = state.videoId;
             player.loadVideoById({
               videoId: state.videoId,
               startSeconds: state.currentTime || 0,
             });
-            player.unMute();
-            player.setVolume(volume);
-          } else if (Math.abs(localTime - state.currentTime) > 2.0) {
-            player.seekTo(state.currentTime, true);
+            if (!isMuted) {
+              player.unMute();
+              player.setVolume(volume);
+            }
+            if (state.isPlaying) {
+              player.playVideo();
+            }
           }
 
+          // B. Synchronize play/pause state without resetting or interrupting
+          const pState = typeof player.getPlayerState === "function" ? player.getPlayerState() : -1;
           if (state.isPlaying) {
-            player.unMute();
-            player.setVolume(volume);
-            player.playVideo();
+            if (pState !== 1 && pState !== 3) {
+              if (!isMuted) {
+                player.unMute();
+                player.setVolume(volume);
+              }
+              player.playVideo();
+            }
           } else {
-            player.pauseVideo();
+            if (pState === 1 || pState === 3) {
+              player.pauseVideo();
+            }
           }
         } catch (err) {
           console.error("Player sync error:", err);
@@ -845,6 +856,34 @@ function performClientSearchFallback(query) {
   // Direct Play (Admin)
   const handlePlaySongDirect = useCallback(
     (song) => {
+      currentLoadedVideoIdRef.current = song.videoId;
+
+      // Direct User Gesture audio playback
+      if (playerRef.current) {
+        try {
+          if (!isMuted) {
+            playerRef.current.unMute();
+            playerRef.current.setVolume(volume);
+          }
+          playerRef.current.loadVideoById({
+            videoId: song.videoId,
+            startSeconds: 0,
+          });
+          playerRef.current.playVideo();
+        } catch (e) {}
+      }
+
+      setRoomState((prev) => ({
+        ...(prev || {}),
+        videoId: song.videoId,
+        trackTitle: song.title,
+        artistName: song.artist,
+        thumbnail: song.thumbnail,
+        durationSec: song.seconds || 180,
+        isPlaying: true,
+        currentTime: 0,
+      }));
+
       socket.emit("action", {
         roomId,
         type: "CHANGE_TRACK",
@@ -853,15 +892,34 @@ function performClientSearchFallback(query) {
         artistName: song.artist,
         thumbnail: song.thumbnail,
         durationSec: song.seconds,
+        username,
       });
       setSearchResults([]);
+      showToast(`▶ Now Playing: "${song.title}"`, "success");
     },
-    [roomId]
+    [roomId, isMuted, volume, username, showToast]
   );
 
   // Request Song (Listener)
   const handleRequestSong = useCallback(
     (song) => {
+      const newRequest = {
+        id: `req_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`,
+        videoId: song.videoId,
+        title: song.title,
+        artist: song.artist,
+        thumbnail: song.thumbnail,
+        duration: song.duration,
+        durationSec: song.seconds || song.durationSec || 180,
+        requestedBy: username,
+        requestedAt: Date.now(),
+      };
+
+      setRoomState((prev) => ({
+        ...prev,
+        requests: [...(prev?.requests || []), newRequest],
+      }));
+
       socket.emit("request-song", {
         roomId,
         song,
@@ -875,75 +933,241 @@ function performClientSearchFallback(query) {
   // Add to Queue (Admin)
   const handleAddToQueue = useCallback(
     (song) => {
+      const newQueueItem = {
+        id: `queue_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`,
+        videoId: song.videoId,
+        title: song.title,
+        artist: song.artist,
+        thumbnail: song.thumbnail,
+        duration: song.duration,
+        durationSec: song.seconds || song.durationSec || 180,
+        requestedBy: username,
+      };
+
+      setRoomState((prev) => ({
+        ...prev,
+        queue: [...(prev?.queue || []), newQueueItem],
+      }));
+
       socket.emit("add-to-queue", {
         roomId,
         song,
         requestedBy: username,
       });
+      showToast(`Added "${song.title}" to Queue!`, "success");
     },
-    [roomId, username]
+    [roomId, username, showToast]
   );
 
   // Accept Request (Admin)
   const handleAcceptRequest = useCallback(
     (requestId, playImmediately) => {
+      const req = roomState?.requests?.find((r) => r.id === requestId);
+      if (req) {
+        if (playImmediately) {
+          currentLoadedVideoIdRef.current = req.videoId;
+          if (playerRef.current) {
+            try {
+              if (!isMuted) {
+                playerRef.current.unMute();
+                playerRef.current.setVolume(volume);
+              }
+              playerRef.current.loadVideoById({
+                videoId: req.videoId,
+                startSeconds: 0,
+              });
+              playerRef.current.playVideo();
+            } catch (e) {}
+          }
+          setRoomState((prev) => ({
+            ...prev,
+            videoId: req.videoId,
+            trackTitle: req.title,
+            artistName: req.artist,
+            thumbnail: req.thumbnail,
+            durationSec: req.durationSec || 180,
+            currentTime: 0,
+            isPlaying: true,
+            requests: prev.requests.filter((r) => r.id !== requestId),
+          }));
+          showToast(`▶ Now Playing: "${req.title}"`, "success");
+        } else {
+          setRoomState((prev) => ({
+            ...prev,
+            requests: prev.requests.filter((r) => r.id !== requestId),
+            queue: [
+              ...(prev.queue || []),
+              {
+                id: `queue_${Date.now()}`,
+                videoId: req.videoId,
+                title: req.title,
+                artist: req.artist,
+                thumbnail: req.thumbnail,
+                duration: req.duration,
+                durationSec: req.durationSec || 180,
+                requestedBy: req.requestedBy,
+              },
+            ],
+          }));
+          showToast(`Added "${req.title}" to Queue!`, "success");
+        }
+      }
+
       socket.emit("accept-request", {
         roomId,
         requestId,
         playImmediately,
+        username,
       });
     },
-    [roomId]
+    [roomId, roomState?.requests, isMuted, volume, username, showToast]
   );
 
   // Reject Request (Admin)
   const handleRejectRequest = useCallback(
     (requestId) => {
+      setRoomState((prev) => ({
+        ...prev,
+        requests: prev.requests.filter((r) => r.id !== requestId),
+      }));
+
       socket.emit("reject-request", {
         roomId,
         requestId,
+        username,
       });
       showToast("Request declined", "info");
     },
-    [roomId, showToast]
+    [roomId, username, showToast]
   );
 
   // Remove from Queue (Admin)
   const handleRemoveFromQueue = useCallback(
     (queueItemId) => {
+      setRoomState((prev) => ({
+        ...prev,
+        queue: prev.queue.filter((item) => item.id !== queueItemId),
+      }));
+
       socket.emit("remove-from-queue", {
         roomId,
         queueItemId,
+        username,
       });
     },
-    [roomId]
+    [roomId, username]
   );
 
   // Play Specific Queue Item (Admin)
   const handlePlayQueueItem = useCallback(
     (queueItemId) => {
+      const nextTrack = roomState?.queue?.find((item) => item.id === queueItemId);
+      if (nextTrack) {
+        currentLoadedVideoIdRef.current = nextTrack.videoId;
+        if (playerRef.current) {
+          try {
+            if (!isMuted) {
+              playerRef.current.unMute();
+              playerRef.current.setVolume(volume);
+            }
+            playerRef.current.loadVideoById({
+              videoId: nextTrack.videoId,
+              startSeconds: 0,
+            });
+            playerRef.current.playVideo();
+          } catch (e) {}
+        }
+
+        setRoomState((prev) => ({
+          ...prev,
+          videoId: nextTrack.videoId,
+          trackTitle: nextTrack.title,
+          artistName: nextTrack.artist,
+          thumbnail: nextTrack.thumbnail,
+          durationSec: nextTrack.durationSec || 180,
+          currentTime: 0,
+          isPlaying: true,
+          queue: prev.queue.filter((q) => q.id !== queueItemId),
+        }));
+        showToast(`▶ Playing: "${nextTrack.title}"`, "success");
+      }
+
       socket.emit("skip-track", {
         roomId,
         queueItemId,
+        username,
       });
     },
-    [roomId]
+    [roomId, roomState?.queue, isMuted, volume, username, showToast]
   );
 
   // Skip Track (Admin)
   const handleSkipTrack = useCallback(() => {
-    socket.emit("skip-track", { roomId });
-  }, [roomId]);
+    if (roomState?.queue && roomState.queue.length > 0) {
+      const nextTrack = roomState.queue[0];
+      currentLoadedVideoIdRef.current = nextTrack.videoId;
+      if (playerRef.current) {
+        try {
+          if (!isMuted) {
+            playerRef.current.unMute();
+            playerRef.current.setVolume(volume);
+          }
+          playerRef.current.loadVideoById({
+            videoId: nextTrack.videoId,
+            startSeconds: 0,
+          });
+          playerRef.current.playVideo();
+        } catch (e) {}
+      }
+
+      setRoomState((prev) => ({
+        ...prev,
+        videoId: nextTrack.videoId,
+        trackTitle: nextTrack.title,
+        artistName: nextTrack.artist,
+        thumbnail: nextTrack.thumbnail,
+        durationSec: nextTrack.durationSec || 180,
+        currentTime: 0,
+        isPlaying: true,
+        queue: prev.queue.slice(1),
+      }));
+      showToast(`⏭ Playing next track: "${nextTrack.title}"`, "info");
+    }
+
+    socket.emit("skip-track", { roomId, username });
+  }, [roomId, roomState?.queue, isMuted, volume, username, showToast]);
 
   // Playback Controls
   const handleTogglePlay = useCallback(() => {
-    const time = playerRef.current ? playerRef.current.getCurrentTime() : currentTime;
+    const nextPlayState = !roomState?.isPlaying;
+    const time = playerRef.current && typeof playerRef.current.getCurrentTime === "function"
+      ? playerRef.current.getCurrentTime()
+      : currentTime;
+
+    // Direct User Gesture audio play/pause
+    if (playerRef.current) {
+      try {
+        if (!isMuted) {
+          playerRef.current.unMute();
+          playerRef.current.setVolume(volume);
+        }
+        if (nextPlayState) {
+          playerRef.current.playVideo();
+        } else {
+          playerRef.current.pauseVideo();
+        }
+      } catch (e) {}
+    }
+
+    setRoomState((prev) => (prev ? { ...prev, isPlaying: nextPlayState, currentTime: time } : prev));
+
     socket.emit("action", {
       roomId,
-      type: roomState?.isPlaying ? "PAUSE" : "PLAY",
+      type: nextPlayState ? "PLAY" : "PAUSE",
       value: time,
+      username,
     });
-  }, [roomId, roomState?.isPlaying, currentTime]);
+  }, [roomId, roomState?.isPlaying, currentTime, isMuted, volume, username]);
 
   const handleSeekChange = useCallback((e) => {
     setIsSeeking(true);
@@ -1168,6 +1392,19 @@ function performClientSearchFallback(query) {
     const myName = user?.username || username || `Host-${Math.floor(100 + Math.random() * 900)}`;
     const myColor = user?.avatarColor || avatarColor || "#8b5cf6";
 
+    currentLoadedVideoIdRef.current = song.videoId;
+
+    if (playerRef.current) {
+      try {
+        if (!isMuted) {
+          playerRef.current.unMute();
+          playerRef.current.setVolume(volume);
+        }
+        playerRef.current.loadVideoById({ videoId: song.videoId, startSeconds: 0 });
+        playerRef.current.playVideo();
+      } catch (e) {}
+    }
+
     handleCreateRoom({
       roomId: newRoomId,
       passcode: "",
@@ -1175,20 +1412,31 @@ function performClientSearchFallback(query) {
       avatarColor: myColor,
     });
 
+    setRoomState((prev) => ({
+      ...(prev || {}),
+      roomId: newRoomId,
+      videoId: song.videoId,
+      trackTitle: song.title,
+      artistName: song.artist,
+      thumbnail: song.thumbnail,
+      durationSec: song.seconds || 180,
+      isPlaying: true,
+      currentTime: 0,
+    }));
+
     setTimeout(() => {
-      socket.emit("add-to-queue", {
+      socket.emit("action", {
         roomId: newRoomId,
-        song: {
-          videoId: song.videoId,
-          title: song.title,
-          artist: song.artist,
-          thumbnail: song.thumbnail,
-          duration: song.duration,
-          seconds: song.seconds || 200,
-        },
+        type: "CHANGE_TRACK",
+        value: song.videoId,
+        trackTitle: song.title,
+        artistName: song.artist,
+        thumbnail: song.thumbnail,
+        durationSec: song.seconds || 180,
+        username: myName,
       });
       setViewMode("lounge");
-    }, 400);
+    }, 200);
   };
 
   // Is current user muted by host?
@@ -1209,7 +1457,7 @@ function performClientSearchFallback(query) {
       {/* Musync Audio Engine */}
       <div className="hidden-youtube-engine">
         <YouTube
-          videoId={roomState?.videoId || "jfKfPfyJRdk"}
+          videoId={roomState?.videoId || "jJPMnTXl63E"}
           opts={{
             height: "200",
             width: "200",
@@ -1219,14 +1467,15 @@ function performClientSearchFallback(query) {
               disablekb: 1,
               playsinline: 1,
               enablejsapi: 1,
-              origin: window.location.origin,
             },
           }}
           onReady={(e) => {
             playerRef.current = e.target;
             try {
-              playerRef.current.unMute();
-              playerRef.current.setVolume(volume);
+              if (!isMuted) {
+                playerRef.current.unMute();
+                playerRef.current.setVolume(volume);
+              }
               if (roomState?.isPlaying) {
                 playerRef.current.playVideo();
               }
@@ -1241,6 +1490,11 @@ function performClientSearchFallback(query) {
                 }
               } catch (err) {}
             }
+          }}
+          onError={(e) => {
+            console.warn("YouTube player error:", e?.data);
+            showToast("⚠️ Video embedding restricted. Skipping track...", "warning");
+            handleSkipTrack();
           }}
           onEnd={handleVideoEnded}
         />
