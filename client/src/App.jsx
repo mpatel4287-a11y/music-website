@@ -428,19 +428,23 @@ export default function App() {
       if (playerRef.current) {
         const player = playerRef.current;
         try {
-          // A. Only load track if videoId actually changed (prevents reload loop every 1s)
-          if (state.videoId && state.videoId !== currentLoadedVideoIdRef.current) {
-            currentLoadedVideoIdRef.current = state.videoId;
-            player.loadVideoById({
-              videoId: state.videoId,
-              startSeconds: state.currentTime || 0,
-            });
-            if (!isMuted) {
-              player.unMute();
-              player.setVolume(volume);
-            }
-            if (state.isPlaying) {
-              player.playVideo();
+          // A. Only load track if videoId actually changed (prevents reload loop every 1s or on initial sync)
+          if (state.videoId) {
+            if (!currentLoadedVideoIdRef.current) {
+              currentLoadedVideoIdRef.current = state.videoId;
+            } else if (state.videoId !== currentLoadedVideoIdRef.current) {
+              currentLoadedVideoIdRef.current = state.videoId;
+              player.loadVideoById({
+                videoId: state.videoId,
+                startSeconds: state.currentTime || 0,
+              });
+              if (!isMuted) {
+                player.unMute();
+                player.setVolume(volume);
+              }
+              if (state.isPlaying) {
+                player.playVideo();
+              }
             }
           }
 
@@ -572,38 +576,17 @@ export default function App() {
             }
           }
 
-          // B. Smooth Cross-Device Sync Check: Auto-Correct Drift & Play State
+          // B. Smooth Cross-Device Sync Check: Auto-Correct Play State (NO intrusive seeking)
           if (tickCount % 4 === 0 && room) {
-            let expectedTime = room.currentTime || 0;
-            if (room.isPlaying && room.lastUpdated) {
-              expectedTime += (Date.now() - room.lastUpdated) / 1000;
-            }
-
             const playerState = typeof player.getPlayerState === "function" ? player.getPlayerState() : -1;
 
             // Do not intervene if player is actively buffering (playerState 3)
             if (playerState !== 3) {
-              // 1. Force Play state if room is playing but player is strictly paused, cued, or unstarted
+              // Force Play state if room is playing but player is strictly paused, cued, or unstarted
               if (room.isPlaying && (playerState === 2 || playerState === 5 || playerState === 0 || playerState === -1)) {
                 try { player.playVideo(); } catch (e) {}
               } else if (!room.isPlaying && playerState === 1) {
                 try { player.pauseVideo(); } catch (e) {}
-              }
-
-              // 2. Smooth Auto-Seek ONLY if time drift exceeds 3.5s and 6s cooldown passed
-              // (Eliminates continuous micro-jumping stuttering during normal playback)
-              const timeDrift = Math.abs(time - expectedTime);
-              const now = Date.now();
-              if (
-                room.isPlaying &&
-                timeDrift > 3.5 &&
-                !isSeekingRef.current &&
-                now - lastAutoSeekRef.current > 6000
-              ) {
-                lastAutoSeekRef.current = now;
-                try {
-                  player.seekTo(expectedTime, true);
-                } catch (e) {}
               }
             }
           }
@@ -1471,6 +1454,7 @@ function performClientSearchFallback(query) {
           }}
           onReady={(e) => {
             playerRef.current = e.target;
+            currentLoadedVideoIdRef.current = roomStateRef.current?.videoId || "jJPMnTXl63E";
             try {
               if (!isMuted) {
                 playerRef.current.unMute();
