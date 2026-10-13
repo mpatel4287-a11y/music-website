@@ -302,16 +302,10 @@ export default function CreateJoinModal({
               <button
                 type="submit"
                 className="submit-action-btn primary-glow"
-                disabled={isLoading || !username.trim() || !createRoomId.trim()}
+                disabled={!username.trim() || !createRoomId.trim()}
               >
-                {isLoading ? (
-                  <div className="spinner-sm"></div>
-                ) : (
-                  <>
-                    <span>Launch Room</span>
-                    <ArrowRight size={18} />
-                  </>
-                )}
+                <span>Launch Room</span>
+                <ArrowRight size={18} />
               </button>
             </form>
           ) : (
@@ -354,16 +348,10 @@ export default function CreateJoinModal({
               <button
                 type="submit"
                 className="submit-action-btn primary-glow"
-                disabled={isLoading || !username.trim() || !joinRoomId.trim()}
+                disabled={!username.trim() || !joinRoomId.trim()}
               >
-                {isLoading ? (
-                  <div className="spinner-sm"></div>
-                ) : (
-                  <>
-                    <span>Join Room</span>
-                    <ArrowRight size={18} />
-                  </>
-                )}
+                <span>Join Room</span>
+                <ArrowRight size={18} />
               </button>
             </form>
           )}

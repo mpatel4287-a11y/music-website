@@ -104,10 +104,37 @@ export default function DashboardView({
   const [selectedGenreTab, setSelectedGenreTab] = useState("all");
   const [accessFilter, setAccessFilter] = useState("all"); // 'all' | 'free' | 'protected'
 
-  const [recommendations, setRecommendations] = useState([]);
+  const [recommendations, setRecommendations] = useState(
+    () => CLIENT_FALLBACK_RECOMMENDATIONS.all || []
+  );
   const [isLoadingRecs, setIsLoadingRecs] = useState(false);
 
-  const [roomsList, setRoomsList] = useState([]);
+  const [roomsList, setRoomsList] = useState(() => [
+    {
+      roomId: "global_lofi",
+      location: "Global Lounge",
+      genre: "Lo-Fi & Chill",
+      hasPasscode: false,
+      listenersCount: 2,
+      adminUsername: "Musync Bot 🎵",
+      trackTitle: "death bed (coffee for your head)",
+      artistName: "Powfu",
+      thumbnail: "https://img.youtube.com/vi/jJPMnTXl63E/hqdefault.jpg",
+      isPlaying: true,
+    },
+    {
+      roomId: "trending_india",
+      location: "Bengaluru, India",
+      genre: "Trending Hits",
+      hasPasscode: false,
+      listenersCount: 2,
+      adminUsername: "SonicWave",
+      trackTitle: "Kesariya",
+      artistName: "Arijit Singh",
+      thumbnail: "https://img.youtube.com/vi/BddP6PYo2gs/hqdefault.jpg",
+      isPlaying: true,
+    },
+  ]);
   const [isLoadingRooms, setIsLoadingRooms] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
 

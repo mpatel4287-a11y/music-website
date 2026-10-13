@@ -277,7 +277,38 @@ export default function App() {
             const targetColor = savedSession.avatarColor || currentColor;
 
             if (targetRoom && targetUser) {
-              setIsAuthLoading(true);
+              setRoomId(targetRoom);
+              if (targetPass) setPasscode(targetPass);
+              setUsername(targetUser);
+              setAvatarColor(targetColor);
+              setIsAuthLoading(false);
+              setInRoom(true);
+              setViewMode("lounge");
+
+              setRoomState((prev) => {
+                if (prev && prev.roomId === targetRoom) return prev;
+                return {
+                  roomId: targetRoom,
+                  trackTitle: "Lofi Chill Beats",
+                  artistName: "Lofi Girl",
+                  videoId: "jfKfPfyJRdk",
+                  thumbnail: "https://images.unsplash.com/photo-1518609878373-06d740f60d8b?w=500&auto=format&fit=crop&q=60",
+                  isPlaying: false,
+                  currentTime: 0,
+                  users: [{ socketId: socket.id || "listener", username: targetUser, isAdmin: false, avatarColor: targetColor }],
+                  queue: [],
+                  requests: [],
+                  chatMessages: [{ id: `msg_${Date.now()}`, system: true, text: `🎵 Reconnected to room "${targetRoom}"!` }],
+                  isCurrentClientAdmin: false,
+                  isCurrentClientMainHost: false,
+                  hasPasscode: Boolean(targetPass),
+                };
+              });
+
+              if (!socket.connected) {
+                try { socket.connect(); } catch (e) {}
+              }
+
               socket.emit(
                 "join-room",
                 {
@@ -287,18 +318,13 @@ export default function App() {
                   avatarColor: targetColor,
                 },
                 (res) => {
-                  setIsAuthLoading(false);
                   if (res?.success) {
-                    setRoomId(res.roomId);
-                    setPasscode(targetPass);
-                    setUsername(targetUser);
-                    setAvatarColor(targetColor);
                     setIsHost(Boolean(res.isAdmin));
-                    setInRoom(true);
-                  } else {
-                    localStorage.removeItem("musync_active_room");
-                    setInRoom(false);
-                    setViewMode("dashboard");
+                  } else if (res?.requiresPasscode) {
+                    setAuthError(res.message || "Passcode required to join this room.");
+                    setInitialUrlRoomId(targetRoom);
+                    setIsCreateJoinModalOpen(true);
+                    showToast(`🔒 Passcode required for room "${targetRoom}"`, "warning");
                   }
                 }
               );
@@ -795,7 +821,7 @@ function performClientSearchFallback(query) {
       try {
         const activeBackend = BACKEND_URL && BACKEND_URL.startsWith("http")
           ? BACKEND_URL
-          : "https://music-website-production.up.railway.app";
+          : "https://musync-ligw.onrender.com";
 
         const res = await fetch(`${activeBackend}/api/search?q=${encodeURIComponent(query)}`);
         const data = res.ok ? await res.json() : { results: [] };
@@ -1370,7 +1396,7 @@ function performClientSearchFallback(query) {
           onJoinRoom={(data) => {
             handleJoinRoom(data);
           }}
-          isLoading={isAuthLoading}
+          isLoading={false}
           errorMessage={authError}
           clearError={() => setAuthError("")}
           onClose={() => setIsCreateJoinModalOpen(false)}
