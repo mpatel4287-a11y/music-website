@@ -981,12 +981,33 @@ io.on("connection", (socket) => {
     }
 
     if (rooms[cleanRoomId] && rooms[cleanRoomId].users && rooms[cleanRoomId].users.length > 0) {
-      if (callback) {
-        callback({
-          success: false,
-          message: `Room "${cleanRoomId}" is already active with listeners. Please join it or choose another name.`,
+      // Room already active with listeners - seamlessly connect into it instead of failing
+      const existingRoom = rooms[cleanRoomId];
+      socket.join(cleanRoomId);
+      socket.roomId = cleanRoomId;
+      socket.username = cleanUsername;
+
+      const userExists = existingRoom.users.some(
+        (u) => u.socketId === socket.id || (u.username && u.username.toLowerCase() === cleanUsername.toLowerCase())
+      );
+      if (!userExists) {
+        existingRoom.users.push({
+          socketId: socket.id,
+          username: cleanUsername,
+          isAdmin: false,
+          avatarColor: avatarColor || "#8b5cf6",
         });
       }
+
+      if (callback) {
+        callback({
+          success: true,
+          roomId: cleanRoomId,
+          passcode: existingRoom.passcode,
+          isAdmin: socket.id === existingRoom.adminSocketId,
+        });
+      }
+      broadcastRoomSync(cleanRoomId);
       return;
     }
 
@@ -1041,7 +1062,7 @@ io.on("connection", (socket) => {
     broadcastRoomSync(cleanRoomId);
   });
 
-  // 2. Join Room
+  // 2. Join Room (Auto-creates room if not present so users never get stuck)
   socket.on("join-room", ({ roomId, passcode, username, avatarColor }, callback) => {
     const cleanRoomId = (roomId || "").trim().toLowerCase();
     const cleanUsername = (username || "").trim() || `Listener-${Math.floor(1000 + Math.random() * 9000)}`;
@@ -1056,16 +1077,42 @@ io.on("connection", (socket) => {
       room = ensureDefaultRoom(cleanRoomId);
     }
 
-    // Do NOT auto-create non-existent custom rooms. Return clean error!
+    // Auto-create room if not found so users never hit an infinite loading or room-not-found dead end
     if (!room) {
-      if (callback) {
-        callback({
-          success: false,
-          roomNotFound: true,
-          message: `Room "${cleanRoomId}" does not exist or has ended.`,
-        });
-      }
-      return;
+      rooms[cleanRoomId] = {
+        roomId: cleanRoomId,
+        passcode: (passcode || "").trim(),
+        adminSocketId: socket.id,
+        adminUsername: cleanUsername,
+        videoId: "jfKfPfyJRdk",
+        isPlaying: false,
+        currentTime: 0,
+        lastUpdated: Date.now(),
+        trackTitle: "Lofi Chill Beats",
+        artistName: "Lofi Girl",
+        thumbnail: "https://images.unsplash.com/photo-1518609878373-06d740f60d8b?w=500&auto=format&fit=crop&q=60",
+        durationSec: 180,
+        users: [
+          {
+            socketId: socket.id,
+            username: cleanUsername,
+            isAdmin: true,
+            avatarColor: avatarColor || "#8b5cf6",
+          },
+        ],
+        mutedSocketIds: new Set(),
+        queue: [],
+        requests: [],
+        chatMessages: [
+          {
+            id: `msg_${Date.now()}`,
+            system: true,
+            text: `🎉 ${cleanUsername} joined and started the room! Welcome to Musync.`,
+            time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+          },
+        ],
+      };
+      room = rooms[cleanRoomId];
     }
 
     // Validate Passcode if set

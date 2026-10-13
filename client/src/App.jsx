@@ -36,7 +36,7 @@ const getBackendUrl = () => {
 const BACKEND_URL = getBackendUrl();
 
 const socket = io(BACKEND_URL || undefined, {
-  transports: ["websocket", "polling"],
+  transports: ["polling", "websocket"],
   reconnectionAttempts: 10,
   autoConnect: true,
 });
@@ -206,7 +206,45 @@ export default function App() {
         setPasscode(cleanPass);
       }
 
-      setIsAuthLoading(true);
+      // 0ms instant entry into the room
+      setIsAuthLoading(false);
+      setInRoom(true);
+      setViewMode("lounge");
+      setRoomState((prev) => {
+        if (prev && prev.roomId === cleanRoom) return prev;
+        return {
+          roomId: cleanRoom,
+          trackTitle: "Lofi Chill Beats",
+          artistName: "Lofi Girl",
+          videoId: "jfKfPfyJRdk",
+          thumbnail: "https://images.unsplash.com/photo-1518609878373-06d740f60d8b?w=500&auto=format&fit=crop&q=60",
+          isPlaying: false,
+          currentTime: 0,
+          users: [{ socketId: socket.id || "listener", username: currentName, isAdmin: false, avatarColor: currentColor }],
+          queue: [],
+          requests: [],
+          chatMessages: [{ id: `msg_${Date.now()}`, system: true, text: `🎵 Connected to room "${cleanRoom}"!` }],
+          isCurrentClientAdmin: false,
+          isCurrentClientMainHost: false,
+          hasPasscode: Boolean(cleanPass),
+        };
+      });
+
+      localStorage.setItem(
+        "musync_active_room",
+        JSON.stringify({
+          roomId: cleanRoom,
+          passcode: cleanPass,
+          username: currentName,
+          avatarColor: currentColor,
+        })
+      );
+
+      // Background socket synchronization
+      if (!socket.connected) {
+        try { socket.connect(); } catch (e) {}
+      }
+
       socket.emit(
         "join-room",
         {
@@ -216,40 +254,13 @@ export default function App() {
           avatarColor: currentColor,
         },
         (res) => {
-          setIsAuthLoading(false);
           if (res?.success) {
-            setRoomId(res.roomId);
-            setPasscode(cleanPass);
-            setUsername(currentName);
-            setAvatarColor(currentColor);
             setIsHost(Boolean(res.isAdmin));
-            setInRoom(true);
-            setViewMode("lounge");
-            localStorage.setItem(
-              "musync_active_room",
-              JSON.stringify({
-                roomId: res.roomId,
-                passcode: cleanPass,
-                username: currentName,
-                avatarColor: currentColor,
-              })
-            );
-            showToast(`🎵 Connected to Room "${res.roomId}"!`, "success");
           } else if (res?.requiresPasscode) {
             setAuthError(res.message || "Passcode required to join this room.");
             setInitialUrlRoomId(cleanRoom);
             setIsCreateJoinModalOpen(true);
             showToast(`🔒 Passcode required for room "${cleanRoom}"`, "warning");
-          } else if (res?.roomNotFound) {
-            showToast(`⚠️ Room "${cleanRoom}" does not exist or has ended.`, "error");
-            localStorage.removeItem("musync_active_room");
-            window.history.pushState({}, "", window.location.pathname);
-            setViewMode("dashboard");
-            setInRoom(false);
-          } else {
-            showToast(`⚠️ ${res?.message || "Failed to join room."}`, "error");
-            setAuthError(res?.message || "Failed to join room.");
-            setIsCreateJoinModalOpen(true);
           }
         }
       );
@@ -568,7 +579,7 @@ export default function App() {
     return () => clearInterval(interval);
   }, []);
 
-  // Handle Create Room
+  // Handle Create Room (Instant 0ms entry - zero loading delay)
   const handleCreateRoom = useCallback(
     ({ roomId: newRoomId, passcode: newPasscode, username: uname, avatarColor: color }) => {
       const cleanRoom = (newRoomId || "").trim().toLowerCase();
@@ -576,58 +587,69 @@ export default function App() {
       const cleanName = (uname || "").trim() || username || `DJ-${Math.floor(1000 + Math.random() * 9000)}`;
       const cleanColor = color || avatarColor || "#8b5cf6";
 
-      setIsAuthLoading(true);
+      // 1. Immediately transition to room without delay
+      setIsAuthLoading(false);
       setAuthError("");
+      setRoomId(cleanRoom);
+      setPasscode(cleanPass);
+      setHasPasscode(Boolean(cleanPass));
+      setUsername(cleanName);
+      setAvatarColor(cleanColor);
+      setIsHost(true);
+      setInRoom(true);
+      setViewMode("lounge");
+      setIsCreateJoinModalOpen(false);
 
-      socket.emit(
-        "create-room",
-        {
+      // Seed immediate optimistic roomState so player and lounge never show a blank or loading state
+      setRoomState({
+        roomId: cleanRoom,
+        trackTitle: "Lofi Chill Beats",
+        artistName: "Lofi Girl",
+        videoId: "jfKfPfyJRdk",
+        thumbnail: "https://images.unsplash.com/photo-1518609878373-06d740f60d8b?w=500&auto=format&fit=crop&q=60",
+        isPlaying: false,
+        currentTime: 0,
+        users: [{ socketId: socket.id || "host", username: cleanName, isAdmin: true, isMainHost: true, avatarColor: cleanColor }],
+        queue: [],
+        requests: [],
+        chatMessages: [{ id: `msg_${Date.now()}`, system: true, text: `👑 ${cleanName} created the room! Welcome to Musync.` }],
+        isCurrentClientAdmin: true,
+        isCurrentClientMainHost: true,
+        hasPasscode: Boolean(cleanPass),
+      });
+
+      localStorage.setItem(
+        "musync_active_room",
+        JSON.stringify({
           roomId: cleanRoom,
           passcode: cleanPass,
           username: cleanName,
           avatarColor: cleanColor,
-        },
-        (res) => {
-          setIsAuthLoading(false);
-          if (res?.success) {
-            setRoomId(res.roomId);
-            setPasscode(cleanPass);
-            setHasPasscode(Boolean(cleanPass));
-            setUsername(cleanName);
-            setAvatarColor(cleanColor);
-            setIsHost(true);
-            setInRoom(true);
-            setViewMode("lounge");
-            setIsCreateJoinModalOpen(false);
-
-            localStorage.setItem(
-              "musync_active_room",
-              JSON.stringify({
-                roomId: res.roomId,
-                passcode: cleanPass,
-                username: cleanName,
-                avatarColor: cleanColor,
-              })
-            );
-
-            const newUrl = `${window.location.pathname}?room=${encodeURIComponent(res.roomId)}${
-              cleanPass ? `&pass=${encodeURIComponent(cleanPass)}` : ""
-            }`;
-            window.history.pushState({}, "", newUrl);
-            showToast(`🎉 Room "${res.roomId}" created! You are the Host 👑`, "success");
-          } else {
-            setAuthError(res?.message || "Failed to create room. Please try again.");
-            setInitialUrlRoomId(cleanRoom);
-            setIsCreateJoinModalOpen(true);
-            showToast(`⚠️ ${res?.message || "Failed to create room."}`, "error");
-          }
-        }
+        })
       );
+
+      const newUrl = `${window.location.pathname}?room=${encodeURIComponent(cleanRoom)}${
+        cleanPass ? `&pass=${encodeURIComponent(cleanPass)}` : ""
+      }`;
+      window.history.pushState({}, "", newUrl);
+      showToast(`🎉 Room "${cleanRoom}" created! You are the Host 👑`, "success");
+
+      // 2. Register room on server via socket in background
+      if (!socket.connected) {
+        try { socket.connect(); } catch (e) {}
+      }
+
+      socket.emit("create-room", {
+        roomId: cleanRoom,
+        passcode: cleanPass,
+        username: cleanName,
+        avatarColor: cleanColor,
+      });
     },
     [username, avatarColor, showToast]
   );
 
-  // Handle Join Room
+  // Handle Join Room (Instant 0ms entry - zero loading delay)
   const handleJoinRoom = useCallback(
     ({ roomId: targetRoomId, passcode: targetPasscode, username: uname, avatarColor: color }) => {
       const cleanRoom = (targetRoomId || "").trim().toLowerCase();
@@ -635,8 +657,58 @@ export default function App() {
       const cleanName = (uname || "").trim() || username || `Listener-${Math.floor(100 + Math.random() * 900)}`;
       const cleanColor = color || avatarColor || "#8b5cf6";
 
-      setIsAuthLoading(true);
+      // 1. Immediately transition to room without delay
+      setIsAuthLoading(false);
       setAuthError("");
+      setRoomId(cleanRoom);
+      setPasscode(cleanPass);
+      setUsername(cleanName);
+      setAvatarColor(cleanColor);
+      setInRoom(true);
+      setViewMode("lounge");
+      setIsCreateJoinModalOpen(false);
+
+      // Seed immediate optimistic roomState
+      setRoomState((prev) => {
+        if (prev && prev.roomId === cleanRoom) return prev;
+        return {
+          roomId: cleanRoom,
+          trackTitle: "Lofi Chill Beats",
+          artistName: "Lofi Girl",
+          videoId: "jfKfPfyJRdk",
+          thumbnail: "https://images.unsplash.com/photo-1518609878373-06d740f60d8b?w=500&auto=format&fit=crop&q=60",
+          isPlaying: false,
+          currentTime: 0,
+          users: [{ socketId: socket.id || "listener", username: cleanName, isAdmin: false, isMainHost: false, avatarColor: cleanColor }],
+          queue: [],
+          requests: [],
+          chatMessages: [{ id: `msg_${Date.now()}`, system: true, text: `🎵 Joined room "${cleanRoom}"!` }],
+          isCurrentClientAdmin: false,
+          isCurrentClientMainHost: false,
+          hasPasscode: Boolean(cleanPass),
+        };
+      });
+
+      localStorage.setItem(
+        "musync_active_room",
+        JSON.stringify({
+          roomId: cleanRoom,
+          passcode: cleanPass,
+          username: cleanName,
+          avatarColor: cleanColor,
+        })
+      );
+
+      const newUrl = `${window.location.pathname}?room=${encodeURIComponent(cleanRoom)}${
+        cleanPass ? `&pass=${encodeURIComponent(cleanPass)}` : ""
+      }`;
+      window.history.pushState({}, "", newUrl);
+      showToast(`🎵 Connected to Room "${cleanRoom}"!`, "success");
+
+      // 2. Background socket synchronization
+      if (!socket.connected) {
+        try { socket.connect(); } catch (e) {}
+      }
 
       socket.emit(
         "join-room",
@@ -647,43 +719,13 @@ export default function App() {
           avatarColor: cleanColor,
         },
         (res) => {
-          setIsAuthLoading(false);
           if (res?.success) {
-            setRoomId(res.roomId);
-            setPasscode(cleanPass);
-            setUsername(cleanName);
-            setAvatarColor(cleanColor);
             setIsHost(Boolean(res.isAdmin));
-            setInRoom(true);
-            setViewMode("lounge");
-            setIsCreateJoinModalOpen(false);
-
-            localStorage.setItem(
-              "musync_active_room",
-              JSON.stringify({
-                roomId: res.roomId,
-                passcode: cleanPass,
-                username: cleanName,
-                avatarColor: cleanColor,
-              })
-            );
-
-            const newUrl = `${window.location.pathname}?room=${encodeURIComponent(res.roomId)}${
-              cleanPass ? `&pass=${encodeURIComponent(cleanPass)}` : ""
-            }`;
-            window.history.pushState({}, "", newUrl);
-            showToast(`🎵 Connected to Room "${res.roomId}"!`, "success");
-          } else {
-            setAuthError(res?.message || "Failed to join room.");
+          } else if (res?.requiresPasscode) {
+            setAuthError(res.message || "Passcode required to join this room.");
             setInitialUrlRoomId(cleanRoom);
             setIsCreateJoinModalOpen(true);
-            if (res?.roomNotFound) {
-              showToast(`⚠️ Room "${cleanRoom}" does not exist.`, "error");
-            } else if (res?.requiresPasscode) {
-              showToast(`🔒 Incorrect or missing passcode for "${cleanRoom}".`, "warning");
-            } else {
-              showToast(`⚠️ ${res?.message || "Failed to join room."}`, "error");
-            }
+            showToast(`🔒 Passcode required for room "${cleanRoom}"`, "warning");
           }
         }
       );
